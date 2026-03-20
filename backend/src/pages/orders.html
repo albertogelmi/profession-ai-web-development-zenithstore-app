@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZenithStore - Gestione Ordini</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 700px;
+      width: 100%;
+      padding: 40px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 30px;
+    }
+
+    .back-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      transition: transform 0.2s ease;
+      margin-right: 20px;
+    }
+
+    .back-btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .header-content {
+      flex: 1;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-bottom: 0;
+      font-size: 14px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #333;
+      font-size: 14px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    button {
+      width: 100%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 14px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .result {
+      margin-top: 25px;
+      padding: 20px;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 300px;
+      overflow-y: auto;
+      display: none;
+    }
+
+    .result.success {
+      background: #d4edda;
+      color: #155724;
+      border: 2px solid #c3e6cb;
+    }
+
+    .result.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 2px solid #f5c6cb;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+
+    .status-completed {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .status-failed {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .status-cancelled {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .loader {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #667eea;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+      margin-left: 10px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .info-box {
+      background: #e7f3ff;
+      border-left: 4px solid #2196F3;
+      padding: 15px;
+      margin-bottom: 25px;
+      border-radius: 4px;
+      font-size: 13px;
+      color: #0d47a1;
+    }
+
+    .quick-actions {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .quick-btn {
+      padding: 8px 12px;
+      font-size: 12px;
+      border-radius: 6px;
+      border: 2px solid #667eea;
+      background: white;
+      color: #667eea;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .quick-btn:hover {
+      background: #667eea;
+      color: white;
+    }
+
+    hr {
+      border: none;
+      border-top: 2px solid #e0e0e0;
+      margin: 30px 0;
+    }
+
+    h3 {
+      color: #333;
+      margin-bottom: 20px;
+      font-size: 18px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    /* Progress Indicator Styles */
+    .progress-container {
+      margin: 30px 0;
+      padding: 25px 20px;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .progress-steps {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+      padding: 0;
+      margin: 0;
+      list-style: none;
+    }
+
+    .progress-steps::before {
+      content: '';
+      position: absolute;
+      top: 20px;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: #e0e0e0;
+      z-index: 0;
+    }
+
+    .progress-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      z-index: 1;
+      flex: 1;
+    }
+
+    .step-circle {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: white;
+      border: 3px solid #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: bold;
+      color: #999;
+      transition: all 0.3s ease;
+      margin-bottom: 8px;
+    }
+
+    .step-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #666;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+
+    .progress-step.completed .step-circle {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-color: #667eea;
+      color: white;
+    }
+
+    .progress-step.completed .step-label {
+      color: #667eea;
+    }
+
+    .progress-step.active .step-circle {
+      background: white;
+      border-color: #667eea;
+      color: #667eea;
+      border-width: 4px;
+      animation: pulse 2s infinite;
+    }
+
+    .progress-step.active .step-label {
+      color: #667eea;
+      font-weight: 700;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.4);
+      }
+      50% {
+        box-shadow: 0 0 0 8px rgba(102, 126, 234, 0);
+      }
+    }
+
+    /* Status Badge */
+    .step-badge {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      width: 18px;
+      height: 18px;
+      background: #4caf50;
+      border-radius: 50%;
+      border: 2px solid white;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+    }
+
+    .progress-step.completed .step-badge {
+      display: flex;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <a href="/user-interface" class="back-btn">← Indietro</a>
+      <div class="header-content">
+        <h1>📦 Gestione Ordini</h1>
+        <p class="subtitle">Simula webhook e gestisci gli ordini</p>
+      </div>
+    </div>
+
+    <!-- Progress Indicator -->
+    <div class="progress-container">
+      <ul class="progress-steps">
+        <li class="progress-step" id="step-payment">
+          <div class="step-circle">
+            💳
+            <span class="step-badge">✓</span>
+          </div>
+          <span class="step-label">Pagamento</span>
+        </li>
+        <li class="progress-step" id="step-process">
+          <div class="step-circle">
+            📋
+            <span class="step-badge">✓</span>
+          </div>
+          <span class="step-label">Elaborazione</span>
+        </li>
+        <li class="progress-step" id="step-shipping">
+          <div class="step-circle">
+            🚚
+            <span class="step-badge">✓</span>
+          </div>
+          <span class="step-label">Preparazione</span>
+        </li>
+        <li class="progress-step" id="step-sent">
+          <div class="step-circle">
+            ✈️
+            <span class="step-badge">✓</span>
+          </div>
+          <span class="step-label">Spedizione</span>
+        </li>
+        <li class="progress-step" id="step-tracking">
+          <div class="step-circle">
+            📡
+            <span class="step-badge">✓</span>
+          </div>
+          <span class="step-label">Tracking</span>
+        </li>
+      </ul>
+    </div>
+
+    <h3 class="section-title">💳 Simula Webhook Pagamento</h3>
+    
+    <div class="info-box">
+      <strong>ℹ️ Come utilizzare:</strong>
+      <ol style="margin-top: 8px; padding-left: 20px;">
+        <li>Completa il checkout nel frontend (ottieni l'Order ID e il Transaction ID)</li>
+        <li>Inserisci Order ID e Transaction ID qui sotto</li>
+        <li>Seleziona lo stato del pagamento (COMPLETED/FAILED/CANCELLED)</li>
+        <li>Clicca "Invia Webhook" per simulare la callback del payment provider</li>
+      </ol>
+    </div>
+
+    <form id="webhookForm">
+      <div class="form-group">
+        <label for="orderId">Order ID:</label>
+        <input 
+          type="number" 
+          id="orderId" 
+          placeholder="es. 123"
+          required
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="transactionId">Transaction ID:</label>
+        <input 
+          type="text" 
+          id="transactionId" 
+          placeholder="es. txn_1234567890_abc123"
+          required
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="status">Stato Pagamento:</label>
+        <select id="status" required>
+          <option value="COMPLETED">✅ COMPLETED (Ordine → NEW, pagamento riuscito)</option>
+          <option value="FAILED">❌ FAILED (Ordine resta RESERVED, pagamento fallito)</option>
+          <option value="CANCELLED">🚫 CANCELLED (Ordine → CANCELLED, stock rilasciato)</option>
+        </select>
+      </div>
+
+      <button type="submit" id="submitBtn">
+        💳 Invia Webhook Pagamento
+        <span id="loader" class="loader" style="display: none;"></span>
+      </button>
+    </form>
+
+    <div id="result" class="result"></div>
+
+    <!-- Section: Process Order -->
+    <div id="processSection" style="display: none;">
+      <hr>
+      
+      <h3 class="section-title">📋 Elabora Ordine</h3>
+      
+      <div class="info-box" style="margin-bottom: 20px;">
+        <strong>ℹ️ Nota:</strong> Prendi in carico l'ordine confermato per iniziare l'elaborazione.
+        L'ordine passerà da <strong>NEW</strong> a <strong>PROCESSING</strong>.
+      </div>
+      
+      <button id="processBtn">
+        📋 Elabora Ordine
+        <span id="processLoader" class="loader" style="display: none;"></span>
+      </button>
+      
+      <div id="processResult" class="result"></div>
+    </div>
+
+    <!-- Section: Create Shipment -->
+    <div id="shipSection" style="display: none;">
+      <hr>
+      
+      <h3 class="section-title">🚚 Crea Spedizione</h3>
+      
+      <div class="info-box" style="margin-bottom: 20px;">
+        <strong>ℹ️ Nota:</strong> Il tracking code e la data di spedizione vengono generati automaticamente dal sistema 
+        dopo la chiamata all'API del corriere.
+      </div>
+      
+      <div class="form-group">
+        <label for="carrier">Corriere:</label>
+        <select id="carrier" required>
+          <option value="DHL">DHL Express</option>
+          <option value="UPS">UPS</option>
+          <option value="FedEx">FedEx</option>
+          <option value="BRT">BRT</option>
+          <option value="GLS">GLS</option>
+        </select>
+      </div>
+      
+      <button id="shipBtn">
+        🚚 Crea Spedizione
+        <span id="shipLoader" class="loader" style="display: none;"></span>
+      </button>
+      
+      <div id="shipResult" class="result"></div>
+    </div>
+
+    <!-- Section: Mark as Shipped -->
+    <div id="sentSection" style="display: none;">
+      <hr>
+      
+      <h3 class="section-title">✈️ Conferma Spedizione</h3>
+      
+      <div class="info-box" style="margin-bottom: 20px;">
+        <strong>ℹ️ Nota:</strong> Conferma che il pacco è stato consegnato al corriere.
+        L'ordine passerà da <strong>SHIPPING</strong> a <strong>SHIPPED</strong> e lo stock verrà decrementato.
+      </div>
+      
+      <button id="sentBtn">
+        ✈️ Conferma Spedizione
+        <span id="sentLoader" class="loader" style="display: none;"></span>
+      </button>
+      
+      <div id="sentResult" class="result"></div>
+    </div>
+
+    <!-- Section: Shipment Webhook -->
+    <div id="webhookShipmentSection" style="display: none;">
+      <hr>
+      
+      <h3 class="section-title">📡 Simula Webhook Corriere</h3>
+      
+      <div class="info-box" style="margin-bottom: 20px;">
+        <strong>ℹ️ Nota:</strong> Simula gli aggiornamenti inviati dal corriere (es. DHL, UPS) 
+        per tracciare lo stato della spedizione fino alla consegna finale.
+      </div>
+      
+      <div class="form-group">
+        <label for="webhookTrackingCode">Tracking Code:</label>
+        <input 
+          type="text" 
+          id="webhookTrackingCode" 
+          placeholder="es. TRK1234567890"
+          required
+          readonly
+          style="background: #f5f5f5;"
+        >
+      </div>
+      
+      <div class="form-group">
+        <label for="webhookStatus">Stato Spedizione:</label>
+        <select id="webhookStatus" required>
+          <option value="IN_TRANSIT">🚚 IN_TRANSIT (In transito)</option>
+          <option value="OUT_FOR_DELIVERY">🏠 OUT_FOR_DELIVERY (In consegna)</option>
+          <option value="DELIVERED">✅ DELIVERED (Consegnato)</option>
+          <option value="FAILED">❌ FAILED (Consegna fallita)</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="webhookLocation">Location (opzionale):</label>
+        <input 
+          type="text" 
+          id="webhookLocation" 
+          placeholder="es. Milano, IT"
+        >
+      </div>
+      
+      <div class="form-group">
+        <label for="webhookTimestamp">Timestamp (opzionale):</label>
+        <input 
+          type="datetime-local" 
+          id="webhookTimestamp"
+        >
+      </div>
+      
+      <button id="webhookShipmentBtn">
+        📡 Invia Webhook Corriere
+        <span id="webhookShipmentLoader" class="loader" style="display: none;"></span>
+      </button>
+      
+      <div id="webhookShipmentResult" class="result"></div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE_URL = window.location.origin;
+    let currentTrackingCode = ''; // Store tracking code from shipment creation
+
+    // Progress tracking functions
+    function updateProgress(step) {
+      const steps = ['payment', 'process', 'shipping', 'sent', 'tracking'];
+      const currentIndex = steps.indexOf(step);
+      
+      steps.forEach((stepName, index) => {
+        const stepElement = document.getElementById(`step-${stepName}`);
+        if (index < currentIndex) {
+          stepElement.classList.add('completed');
+          stepElement.classList.remove('active');
+        } else if (index === currentIndex) {
+          stepElement.classList.add('active');
+          stepElement.classList.remove('completed');
+        } else {
+          stepElement.classList.remove('completed', 'active');
+        }
+      });
+    }
+
+    function markStepCompleted(step) {
+      const stepElement = document.getElementById(`step-${step}`);
+      stepElement.classList.add('completed');
+      stepElement.classList.remove('active');
+    }
+
+    // Initialize with payment step active
+    updateProgress('payment');
+
+    // Check authentication
+    function checkAuth() {
+      const token = sessionStorage.getItem('authToken');
+      if (!token) {
+        alert('Devi effettuare il login prima di accedere a questa pagina');
+        window.location.href = '/user-interface';
+        return false;
+      }
+      return true;
+    }
+
+    // Handle form submission
+    document.getElementById('webhookForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const orderId = document.getElementById('orderId').value;
+      const transactionId = document.getElementById('transactionId').value;
+      const status = document.getElementById('status').value;
+
+      const resultDiv = document.getElementById('result');
+      const submitBtn = document.getElementById('submitBtn');
+      const loader = document.getElementById('loader');
+
+      // Show loading state
+      submitBtn.disabled = true;
+      loader.style.display = 'inline-block';
+      resultDiv.style.display = 'none';
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/payments/webhook`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            orderId: parseInt(orderId),
+            transactionId: transactionId,
+            status: status,
+            timestamp: new Date().toISOString(),
+          }),
+        });
+
+        const data = await response.json();
+
+        // Show result
+        resultDiv.className = 'result ' + (response.ok ? 'success' : 'error');
+        resultDiv.innerHTML = formatResponse(response.ok, data, status);
+        resultDiv.style.display = 'block';
+
+        // Scroll to result
+        resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+        // If payment was successful (COMPLETED), show process section
+        if (response.ok && status === 'COMPLETED') {
+          markStepCompleted('payment');
+          updateProgress('process');
+          document.getElementById('processSection').style.display = 'block';
+          setTimeout(() => {
+            document.getElementById('processSection').scrollIntoView({ behavior: 'smooth', block: 'end' });
+          }, 500);
+        }
+
+      } catch (error) {
+        resultDiv.className = 'result error';
+        resultDiv.innerHTML = `<strong>❌ Errore di Rete:</strong>\n\n${error.message}\n\nVerifica che il server backend sia in esecuzione su ${API_BASE_URL}`;
+        resultDiv.style.display = 'block';
+      } finally {
+        submitBtn.disabled = false;
+        loader.style.display = 'none';
+      }
+    });
+
+    // Format response for display
+    function formatResponse(success, data, status) {
+      let icon = success ? '✅' : '❌';
+      let title = success ? 'Webhook Inviato con Successo!' : 'Webhook Fallito';
+      
+      let output = `<strong>${icon} ${title}</strong>\n\n`;
+      
+      if (success) {
+        output += `<strong>Stato Pagamento:</strong> <span class="status-badge status-${status.toLowerCase()}">${status}</span>\n\n`;
+        
+        if (data.data) {
+          output += `<strong>Order ID:</strong> ${data.data.orderId}\n`;
+          output += `<strong>Stato:</strong> ${data.data.status}\n`;
+          output += `<strong>Elaborato:</strong> ${data.data.processed ? 'Sì' : 'No (idempotente)'}\n`;
+          if (data.data.message) {
+            output += `<strong>Messaggio:</strong> ${data.data.message}\n`;
+          }
+        }
+        
+        output += `\n<strong>Risposta Completa:</strong>\n`;
+      }
+      
+      output += JSON.stringify(data, null, 2);
+      
+      return output;
+    }
+
+    // Generic format for API responses
+    function formatApiResponse(success, data, title) {
+      let icon = success ? '✅' : '❌';
+      let output = `<strong>${icon} ${title}</strong>\n\n`;
+      output += JSON.stringify(data, null, 2);
+      return output;
+    }
+
+    // Handle "Elabora Ordine" button
+    document.getElementById('processBtn').addEventListener('click', async () => {
+      const token = sessionStorage.getItem('authToken');
+      const orderId = document.getElementById('orderId').value;
+      
+      const resultDiv = document.getElementById('processResult');
+      const btn = document.getElementById('processBtn');
+      const loader = document.getElementById('processLoader');
+
+      // Show loading state
+      btn.disabled = true;
+      loader.style.display = 'inline-block';
+      resultDiv.style.display = 'none';
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/orders/${orderId}/process`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const data = await response.json();
+
+        // Show result
+        resultDiv.className = 'result ' + (response.ok ? 'success' : 'error');
+        resultDiv.innerHTML = formatApiResponse(response.ok, data, 
+          response.ok ? 'Ordine Elaborato con Successo!' : 'Errore nell\'Elaborazione Ordine'
+        );
+        resultDiv.style.display = 'block';
+        resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+        // If successful, show shipment section
+        if (response.ok) {
+          markStepCompleted('process');
+          updateProgress('shipping');
+          document.getElementById('shipSection').style.display = 'block';
+          setTimeout(() => {
+            document.getElementById('shipSection').scrollIntoView({ behavior: 'smooth', block: 'end' });
+          }, 500);
+        }
+
+      } catch (error) {
+        resultDiv.className = 'result error';
+        resultDiv.innerHTML = `<strong>❌ Errore di Rete:</strong>\n\n${error.message}`;
+        resultDiv.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        loader.style.display = 'none';
+      }
+    });
+
+    // Handle "Crea Spedizione" button
+    document.getElementById('shipBtn').addEventListener('click', async () => {
+      const token = sessionStorage.getItem('authToken');
+      const orderId = document.getElementById('orderId').value;
+      const carrier = document.getElementById('carrier').value;
+      
+      const resultDiv = document.getElementById('shipResult');
+      const btn = document.getElementById('shipBtn');
+      const loader = document.getElementById('shipLoader');
+
+      // Validation
+      if (!carrier) {
+        alert('Seleziona un corriere!');
+        return;
+      }
+
+      // Show loading state
+      btn.disabled = true;
+      loader.style.display = 'inline-block';
+      resultDiv.style.display = 'none';
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/orders/${orderId}/ship`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            carrier: carrier
+          })
+        });
+
+        const data = await response.json();
+
+        // Show result
+        resultDiv.className = 'result ' + (response.ok ? 'success' : 'error');
+        
+        // Format response with tracking info highlighted
+        let resultHtml = formatApiResponse(response.ok, data, 
+          response.ok ? 'Spedizione Creata con Successo!' : 'Errore nella Creazione Spedizione'
+        );
+        
+        // Add tracking code highlight if successful
+        if (response.ok && data.data?.shipment?.trackingCode) {
+          currentTrackingCode = data.data.shipment.trackingCode; // Save for webhook
+          resultHtml = `<strong>✅ Spedizione Creata con Successo!</strong>\n\n` +
+                       `<strong>📦 Tracking Code:</strong> <span style="background: #fff3cd; padding: 4px 8px; border-radius: 4px; font-weight: bold;">${data.data.shipment.trackingCode}</span>\n` +
+                       `<strong>🚚 Corriere:</strong> ${data.data.shipment.carrier}\n` +
+                       `<strong>📅 Data Creazione:</strong> ${new Date(data.data.shipment.shipmentDate).toLocaleString('it-IT')}\n\n` +
+                       `<strong>Risposta Completa:</strong>\n${JSON.stringify(data, null, 2)}`;
+        }
+        
+        resultDiv.innerHTML = resultHtml;
+        resultDiv.style.display = 'block';
+        resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+        // If successful, show sent section
+        if (response.ok) {
+          markStepCompleted('shipping');
+          updateProgress('sent');
+          document.getElementById('sentSection').style.display = 'block';
+          setTimeout(() => {
+            document.getElementById('sentSection').scrollIntoView({ behavior: 'smooth', block: 'end' });
+          }, 500);
+        }
+
+      } catch (error) {
+        resultDiv.className = 'result error';
+        resultDiv.innerHTML = `<strong>❌ Errore di Rete:</strong>\n\n${error.message}`;
+        resultDiv.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        loader.style.display = 'none';
+      }
+    });
+
+    // Handle "Spedisci" button
+    document.getElementById('sentBtn').addEventListener('click', async () => {
+      const token = sessionStorage.getItem('authToken');
+      const orderId = document.getElementById('orderId').value;
+      
+      const resultDiv = document.getElementById('sentResult');
+      const btn = document.getElementById('sentBtn');
+      const loader = document.getElementById('sentLoader');
+
+      // Show loading state
+      btn.disabled = true;
+      loader.style.display = 'inline-block';
+      resultDiv.style.display = 'none';
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/orders/${orderId}/ship/sent`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({})
+        });
+
+        const data = await response.json();
+
+        // Show result
+        resultDiv.className = 'result ' + (response.ok ? 'success' : 'error');
+        resultDiv.innerHTML = formatApiResponse(response.ok, data, 
+          response.ok ? 'Ordine Spedito con Successo! 🎉' : 'Errore nella Conferma Spedizione'
+        );
+        resultDiv.style.display = 'block';
+        resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+        // If successful, show shipment webhook section
+        if (response.ok) {
+          markStepCompleted('sent');
+          updateProgress('tracking');
+          document.getElementById('webhookShipmentSection').style.display = 'block';
+          // Pre-fill tracking code
+          document.getElementById('webhookTrackingCode').value = currentTrackingCode;
+          // Set default timestamp to now
+          const now = new Date();
+          now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+          document.getElementById('webhookTimestamp').value = now.toISOString().slice(0, 16);
+          setTimeout(() => {
+            document.getElementById('webhookShipmentSection').scrollIntoView({ behavior: 'smooth', block: 'end' });
+          }, 500);
+        }
+
+      } catch (error) {
+        resultDiv.className = 'result error';
+        resultDiv.innerHTML = `<strong>❌ Errore di Rete:</strong>\n\n${error.message}`;
+        resultDiv.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        loader.style.display = 'none';
+      }
+    });
+
+    // Handle "Simula Webhook Corriere" button
+    document.getElementById('webhookShipmentBtn').addEventListener('click', async () => {
+      const trackingCode = document.getElementById('webhookTrackingCode').value;
+      const status = document.getElementById('webhookStatus').value;
+      const location = document.getElementById('webhookLocation').value;
+      const timestamp = document.getElementById('webhookTimestamp').value;
+      
+      const resultDiv = document.getElementById('webhookShipmentResult');
+      const btn = document.getElementById('webhookShipmentBtn');
+      const loader = document.getElementById('webhookShipmentLoader');
+
+      // Validation
+      if (!trackingCode || !status) {
+        alert('Tracking Code e Status sono obbligatori!');
+        return;
+      }
+
+      // Show loading state
+      btn.disabled = true;
+      loader.style.display = 'inline-block';
+      resultDiv.style.display = 'none';
+
+      try {
+        const payload = {
+          trackingCode: trackingCode,
+          status: status,
+          timestamp: timestamp ? new Date(timestamp).toISOString() : new Date().toISOString()
+        };
+
+        // Add optional location if provided
+        if (location && location.trim()) {
+          payload.location = location.trim();
+        }
+
+        const response = await fetch(`${API_BASE_URL}/api/shipments/webhook`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        // Show result
+        resultDiv.className = 'result ' + (response.ok ? 'success' : 'error');
+        
+        // Format response with status highlight
+        let resultHtml = formatApiResponse(response.ok, data, 
+          response.ok ? 'Webhook Corriere Ricevuto con Successo!' : 'Errore nel Webhook Corriere'
+        );
+        
+        // Add status highlight if successful
+        if (response.ok && data.data) {
+          let statusIcon = '📦';
+          if (status === 'IN_TRANSIT') statusIcon = '🚚';
+          else if (status === 'OUT_FOR_DELIVERY') statusIcon = '🏠';
+          else if (status === 'DELIVERED') statusIcon = '✅';
+          else if (status === 'FAILED') statusIcon = '❌';
+
+          resultHtml = `<strong>✅ Webhook Corriere Ricevuto con Successo!</strong>\n\n` +
+                       `<strong>${statusIcon} Nuovo Status:</strong> <span style="background: #fff3cd; padding: 4px 8px; border-radius: 4px; font-weight: bold;">${status}</span>\n` +
+                       `<strong>📦 Tracking Code:</strong> ${data.data.trackingCode}\n` +
+                       `<strong>🔄 Processato:</strong> ${data.data.processed ? 'Sì' : 'No (idempotente)'}\n`;
+          
+          if (location) {
+            resultHtml += `<strong>📍 Location:</strong> ${location}\n`;
+          }
+          
+          resultHtml += `\n<strong>Risposta Completa:</strong>\n${JSON.stringify(data, null, 2)}`;
+        }
+        
+        resultDiv.innerHTML = resultHtml;
+        resultDiv.style.display = 'block';
+        resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+        // Mark tracking step as completed only if DELIVERED
+        if (response.ok && status === 'DELIVERED') {
+          markStepCompleted('tracking');
+        }
+
+      } catch (error) {
+        resultDiv.className = 'result error';
+        resultDiv.innerHTML = `<strong>❌ Errore di Rete:</strong>\n\n${error.message}`;
+        resultDiv.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        loader.style.display = 'none';
+      }
+    });
+  </script>
+</body>
+</html>

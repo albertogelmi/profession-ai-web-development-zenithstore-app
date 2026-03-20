@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZenithStore - Gestione Promozioni</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 700px;
+      width: 100%;
+      padding: 40px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 30px;
+    }
+
+    .back-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      transition: transform 0.2s ease;
+      margin-right: 20px;
+    }
+
+    .back-btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .header-content {
+      flex: 1;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-bottom: 0;
+      font-size: 14px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #333;
+      font-size: 14px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: all 0.3s ease;
+      font-family: inherit;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    button {
+      width: 100%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 14px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .result {
+      margin-top: 25px;
+      padding: 20px;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 300px;
+      overflow-y: auto;
+      display: none;
+    }
+
+    .result.success {
+      background: #d4edda;
+      color: #155724;
+      border: 2px solid #c3e6cb;
+    }
+
+    .result.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 2px solid #f5c6cb;
+    }
+
+    .loader {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #667eea;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+      margin-left: 10px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .info-box {
+      background: #e7f3ff;
+      border-left: 4px solid #2196F3;
+      padding: 15px;
+      margin-bottom: 25px;
+      border-radius: 4px;
+      font-size: 13px;
+      color: #0d47a1;
+    }
+
+    hr {
+      border: none;
+      border-top: 2px solid #e0e0e0;
+      margin: 30px 0;
+    }
+
+    h3 {
+      color: #333;
+      margin-bottom: 20px;
+      font-size: 18px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .field-hint {
+      font-size: 12px;
+      color: #666;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <a href="/user-interface" class="back-btn">← Indietro</a>
+      <div class="header-content">
+        <h1>🎉 Gestione Promozioni</h1>
+        <p class="subtitle">Invia notifiche broadcast e offerte personalizzate</p>
+      </div>
+    </div>
+
+    <!-- Section: Broadcast Notification -->
+    <h3 class="section-title">📢 Notifica Broadcast</h3>
+    
+    <div class="info-box">
+      <strong>ℹ️ Nota:</strong> Invia una notifica a tutti i customer attivi nel sistema.
+      Ideale per annunci globali, offerte speciali e comunicazioni generali.
+    </div>
+
+    <form id="broadcastForm">
+      <div class="form-group">
+        <label for="broadcastType">Tipo Notifica:</label>
+        <select id="broadcastType" required>
+          <option value="offer">🎁 Offerta - Promozioni e sconti</option>
+          <option value="advertising">📣 Pubblicità - Annunci e novità</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="broadcastTitle">Titolo:</label>
+        <input 
+          type="text" 
+          id="broadcastTitle" 
+          placeholder="es. Super Offerta del Weekend!"
+          required
+          maxlength="100"
+        >
+        <div class="field-hint">Massimo 100 caratteri</div>
+      </div>
+
+      <div class="form-group">
+        <label for="broadcastMessage">Messaggio:</label>
+        <textarea 
+          id="broadcastMessage" 
+          placeholder="es. Sconto del 50% su tutti i prodotti fino a domenica!"
+          required
+          maxlength="500"
+        ></textarea>
+        <div class="field-hint">Massimo 500 caratteri</div>
+      </div>
+
+      <div class="form-group">
+        <label for="broadcastIcon">Icona (opzionale):</label>
+        <input 
+          type="text" 
+          id="broadcastIcon" 
+          placeholder="es. 🎉 (emoji o simbolo)"
+          maxlength="10"
+        >
+        <div class="field-hint">Emoji o simbolo rappresentativo. Se vuoto, usa icona predefinita per tipo.</div>
+      </div>
+
+      <div class="form-group">
+        <label for="broadcastLink">Link (opzionale):</label>
+        <input 
+          type="text" 
+          id="broadcastLink" 
+          placeholder="es. /products"
+        >
+        <div class="field-hint">Path relativo o URL completo</div>
+      </div>
+
+      <div class="form-group">
+        <label for="broadcastPriority">Priorità:</label>
+        <select id="broadcastPriority">
+          <option value="low">🔵 Bassa</option>
+          <option value="normal" selected>⚪ Normale</option>
+          <option value="high">🟡 Alta</option>
+          <option value="urgent">🔴 Urgente</option>
+        </select>
+      </div>
+
+      <button type="submit" id="broadcastBtn">
+        📢 Invia Broadcast
+        <span id="broadcastLoader" class="loader" style="display: none;"></span>
+      </button>
+    </form>
+
+    <div id="broadcastResult" class="result"></div>
+
+    <hr>
+
+    <!-- Section: Wishlist Notification -->
+    <h3 class="section-title">⭐ Notifica Wishlist</h3>
+    
+    <div class="info-box">
+      <strong>ℹ️ Nota:</strong> Invia una notifica solo ai customer che hanno un prodotto specifico nella loro wishlist.
+      Ideale per notificare disponibilità, sconti su prodotti desiderati o novità correlate.
+    </div>
+
+    <form id="wishlistForm">
+      <div class="form-group">
+        <label for="productCode">Product Code:</label>
+        <input 
+          type="text" 
+          id="productCode" 
+          placeholder="es. PRODOTTO01"
+          required
+          style="text-transform: uppercase;"
+        >
+        <div class="field-hint">Codice prodotto presente nel sistema</div>
+      </div>
+
+      <div class="form-group">
+        <label for="wishlistType">Tipo Notifica:</label>
+        <select id="wishlistType" required>
+          <option value="promo_personalized">⭐ Promo Personalizzata - Offerte su misura</option>
+        </select>
+        <div class="field-hint">Le notifiche wishlist sono sempre personalizzate</div>
+      </div>
+
+      <div class="form-group">
+        <label for="wishlistTitle">Titolo:</label>
+        <input 
+          type="text" 
+          id="wishlistTitle" 
+          placeholder="es. Il prodotto nella tua wishlist è in offerta!"
+          required
+          maxlength="100"
+        >
+        <div class="field-hint">Massimo 100 caratteri</div>
+      </div>
+
+      <div class="form-group">
+        <label for="wishlistMessage">Messaggio:</label>
+        <textarea 
+          id="wishlistMessage" 
+          placeholder="es. Il prodotto che desideri è ora disponibile con il 30% di sconto!"
+          required
+          maxlength="500"
+        ></textarea>
+        <div class="field-hint">Massimo 500 caratteri</div>
+      </div>
+
+      <div class="form-group">
+        <label for="wishlistIcon">Icona (opzionale):</label>
+        <input 
+          type="text" 
+          id="wishlistIcon" 
+          placeholder="es. ⭐ (emoji o simbolo)"
+          maxlength="10"
+        >
+        <div class="field-hint">Emoji o simbolo rappresentativo. Se vuoto, usa icona predefinita per tipo.</div>
+      </div>
+
+      <div class="form-group">
+        <label for="wishlistLink">Link (opzionale):</label>
+        <input 
+          type="text" 
+          id="wishlistLink" 
+          placeholder="es. /products/PRODOTTO01"
+        >
+        <div class="field-hint">Path relativo o URL completo</div>
+      </div>
+
+      <div class="form-group">
+        <label for="wishlistPriority">Priorità:</label>
+        <select id="wishlistPriority">
+          <option value="low">🔵 Bassa</option>
+          <option value="normal">⚪ Normale</option>
+          <option value="high" selected>🟡 Alta</option>
+          <option value="urgent">🔴 Urgente</option>
+        </select>
+      </div>
+
+      <button type="submit" id="wishlistBtn">
+        ⭐ Invia Notifica Wishlist
+        <span id="wishlistLoader" class="loader" style="display: none;"></span>
+      </button>
+    </form>
+
+    <div id="wishlistResult" class="result"></div>
+  </div>
+
+  <script>
+    const API_BASE_URL = window.location.origin;
+
+    // Check authentication
+    function checkAuth() {
+      const token = sessionStorage.getItem('authToken');
+      if (!token) {
+        alert('Devi effettuare il login prima di accedere a questa pagina');
+        window.location.href = '/user-interface';
+        return false;
+      }
+      return true;
+    }
+
+    // Check auth on page load
+    checkAuth();
+
+    // Format API response
+    function formatApiResponse(success, data, customersCount) {
+      let icon = success ? '✅' : '❌';
+      let title = success ? 'Notifica Inviata con Successo!' : 'Errore nell\'Invio Notifica';
+      
+      let output = `<strong>${icon} ${title}</strong>\n\n`;
+      
+      if (success && customersCount !== undefined) {
+        output += `<strong>👥 Customer Raggiunti:</strong> ${customersCount}\n\n`;
+      }
+      
+      output += `<strong>Risposta Completa:</strong>\n`;
+      output += JSON.stringify(data, null, 2);
+      
+      return output;
+    }
+
+    // Default icons by notification type
+    const DEFAULT_ICONS = {
+      offer: '🎁',
+      advertising: '📣',
+      promo_personalized: '⭐',
+      order: '📦'
+    };
+
+    // Handle Broadcast Form
+    document.getElementById('broadcastForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const token = sessionStorage.getItem('authToken');
+      const resultDiv = document.getElementById('broadcastResult');
+      const btn = document.getElementById('broadcastBtn');
+      const loader = document.getElementById('broadcastLoader');
+
+      // Get form values
+      const type = document.getElementById('broadcastType').value;
+      const payload = {
+        type: type,
+        title: document.getElementById('broadcastTitle').value.trim(),
+        message: document.getElementById('broadcastMessage').value.trim(),
+      };
+
+      // Add icon (use default if not provided)
+      const icon = document.getElementById('broadcastIcon').value.trim();
+      payload.icon = icon || DEFAULT_ICONS[type];
+
+      const link = document.getElementById('broadcastLink').value.trim();
+      if (link) payload.link = link;
+
+      const priority = document.getElementById('broadcastPriority').value;
+      if (priority) payload.priority = priority;
+
+      // Show loading state
+      btn.disabled = true;
+      loader.style.display = 'inline-block';
+      resultDiv.style.display = 'none';
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/notifications/broadcast`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        // Show result
+        resultDiv.className = 'result ' + (response.ok ? 'success' : 'error');
+        resultDiv.innerHTML = formatApiResponse(response.ok, data, data.data?.count);
+        resultDiv.style.display = 'block';
+        resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+      } catch (error) {
+        resultDiv.className = 'result error';
+        resultDiv.innerHTML = `<strong>❌ Errore di Rete:</strong>\n\n${error.message}`;
+        resultDiv.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        loader.style.display = 'none';
+      }
+    });
+
+    // Handle Wishlist Form
+    document.getElementById('wishlistForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const token = sessionStorage.getItem('authToken');
+      const resultDiv = document.getElementById('wishlistResult');
+      const btn = document.getElementById('wishlistBtn');
+      const loader = document.getElementById('wishlistLoader');
+
+      // Get form values
+      const productCode = document.getElementById('productCode').value.trim().toUpperCase();
+      const type = document.getElementById('wishlistType').value;
+      const payload = {
+        type: type,
+        title: document.getElementById('wishlistTitle').value.trim(),
+        message: document.getElementById('wishlistMessage').value.trim(),
+      };
+
+      // Add icon (use default if not provided)
+      const icon = document.getElementById('wishlistIcon').value.trim();
+      payload.icon = icon || DEFAULT_ICONS[type];
+
+      const link = document.getElementById('wishlistLink').value.trim();
+      if (link) payload.link = link;
+
+      const priority = document.getElementById('wishlistPriority').value;
+      if (priority) payload.priority = priority;
+
+      // Show loading state
+      btn.disabled = true;
+      loader.style.display = 'inline-block';
+      resultDiv.style.display = 'none';
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/notifications/wishlist/${productCode}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        // Show result
+        resultDiv.className = 'result ' + (response.ok ? 'success' : 'error');
+        resultDiv.innerHTML = formatApiResponse(response.ok, data, data.data?.count);
+        resultDiv.style.display = 'block';
+        resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+      } catch (error) {
+        resultDiv.className = 'result error';
+        resultDiv.innerHTML = `<strong>❌ Errore di Rete:</strong>\n\n${error.message}`;
+        resultDiv.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        loader.style.display = 'none';
+      }
+    });
+
+    // Auto-uppercase product code
+    document.getElementById('productCode').addEventListener('input', (e) => {
+      e.target.value = e.target.value.toUpperCase();
+    });
+  </script>
+</body>
+</html>

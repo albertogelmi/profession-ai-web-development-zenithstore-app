@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZenithStore - Notifiche in Tempo Reale</title>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+            width: 100%;
+            max-width: 900px;
+            margin: 20px;
+        }
+
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-content {
+            flex: 1;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            opacity: 0.8;
+            font-size: 14px;
+        }
+
+        .back-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .back-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.connecting {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .events-section {
+            margin-top: 20px;
+        }
+
+        .events-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .events-list {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+        }
+
+        .event-item {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .event-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .event-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .event-type {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 18px;
+        }
+
+        .event-timestamp {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        .event-data {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            border: 1px solid #e9ecef;
+        }
+
+        .no-events {
+            text-align: center;
+            color: #6c757d;
+            font-style: italic;
+            padding: 40px;
+        }
+
+        .clear-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            font-size: 14px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .clear-btn:hover {
+            background: #c0392b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="/user-interface" class="back-btn">← Indietro</a>
+            <div class="header-content">
+                <h1>🔔 Notifiche in Tempo Reale</h1>
+                <p>Monitora eventi degli ordini in tempo reale</p>
+            </div>
+            <div style="width: 100px;"></div> <!-- Spacer for centering -->
+        </div>
+        
+        <div class="content">
+            <div class="status connecting" id="status">
+                🟡 Connessione in corso...
+            </div>
+
+            <div class="events-section">
+                <div class="events-header">
+                    <h3>📋 Eventi Ricevuti</h3>
+                    <button class="clear-btn" onclick="clearEvents()">🗑️ Cancella</button>
+                </div>
+                <div class="events-list" id="eventsList">
+                    <div class="no-events">
+                        Connessione in corso...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let socket = null;
+        let token = null;
+        let events = [];
+
+        // DOM elements
+        const statusEl = document.getElementById('status');
+        const eventsListEl = document.getElementById('eventsList');
+
+        // Check authentication
+        function checkAuth() {
+            token = sessionStorage.getItem('authToken');
+            if (!token) {
+                alert('Devi effettuare il login prima di accedere a questa pagina');
+                window.location.href = '/user-interface';
+                return false;
+            }
+            return true;
+        }
+
+        // Initialize WebSocket connection
+        function connectWebSocket() {
+            if (!token) return;
+
+            socket = io(window.location.origin, {
+                auth: {
+                    token: token
+                }
+            });
+
+            socket.on('connect', () => {
+                updateStatus('connected', '🟢 Connesso al WebSocket server');
+                addEvent('system', 'Connessione WebSocket stabilita', { socketId: socket.id });
+            });
+
+            socket.on('order.paid', (event) => {
+                console.log('Order paid event received:', event);
+                addEvent('order.paid', 'Ordine Pagato', event.data);
+                
+                // Show browser notification if supported
+                if (Notification.permission === 'granted') {
+                    new Notification('💰 Pagamento Ricevuto', {
+                        body: `Ordine ${event.data.orderId} pagato da ${event.data.customerName} - €${event.data.totalAmount}`,
+                        icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMTMuMDkgOC4yNkwyMCA5TDEzLjA5IDE1Ljc0TDEyIDIyTDEwLjkxIDE1Ljc0TDQgOUwxMC45MSA4LjI2TDEyIDJaIiBmaWxsPSIjRkZENzAwIi8+Cjwvc3ZnPgo='
+                    });
+                }
+            });
+
+            socket.on('order.processing', (event) => {
+                console.log('Order processing event received:', event);
+                addEvent('order.processing', 'Ordine in Elaborazione', event.data);
+                
+                if (Notification.permission === 'granted') {
+                    new Notification('⚙️ Ordine Preso in Carico', {
+                        body: `Ordine ${event.data.orderId} del cliente ${event.data.customerName} è ora in elaborazione`,
+                        icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMTMuMDkgOC4yNkwyMCA5TDEzLjA5IDE1Ljc0TDEyIDIyTDEwLjkxIDE1Ljc0TDQgOUwxMC45MSA4LjI2TDEyIDJaIiBmaWxsPSIjRkY5ODAwIi8+Cjwvc3ZnPgo='
+                    });
+                }
+            });
+
+            socket.on('order.sent', (event) => {
+                console.log('Order sent event received:', event);
+                addEvent('order.sent', 'Ordine Spedito', event.data);
+                
+                if (Notification.permission === 'granted') {
+                    new Notification('🚚 Ordine Spedito', {
+                        body: `Ordine ${event.data.orderId} è stato consegnato al corriere ${event.data.carrier} (Tracking: ${event.data.trackingCode})`,
+                        icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE4IDhIMTZWNkE0IDQgMCAwIDAgOCA2VjhINkEyIDIgMCAwIDAgNiA4VjE5QTMgMyAwIDAgMCA5IDIySDEzQTMgMyAwIDAgMCAxNiAxOVYxMEEyIDIgMCAwIDAgMTggOFpNMTAgNkEyIDIgMCAwIDEgMTIgNkEyIDIgMCAwIDEgMTQgNlY4SDEwVjZaIiBmaWxsPSIjMDA5NkZGIi8+Cjwvc3ZnPgo='
+                    });
+                }
+            });
+
+            socket.on('order.shipping', (event) => {
+                console.log('Order shipping event received:', event);
+                addEvent('order.shipping', 'Aggiornamento Spedizione', event.data);
+                
+                if (Notification.permission === 'granted') {
+                    new Notification('📦 Aggiornamento Spedizione', {
+                        body: `Ordine ${event.data.orderId}: nuovo stato ${event.data.status} - ${event.data.carrier}`,
+                        icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMTMuMDkgOC4yNkwyMCA5TDEzLjA5IDE1Ljc0TDEyIDIyTDEwLjkxIDE1Ljc0TDQgOUwxMC45MSA4LjI2TDEyIDJaIiBmaWxsPSIjMDA3QkZGIi8+Cjwvc3ZnPgo='
+                    });
+                }
+            });
+
+            socket.on('order.delivered', (event) => {
+                console.log('Order delivered event received:', event);
+                addEvent('order.delivered', 'Ordine Consegnato', event.data);
+                
+                if (Notification.permission === 'granted') {
+                    new Notification('✅ Ordine Consegnato', {
+                        body: `Ordine ${event.data.orderId} consegnato a ${event.data.customerName}`,
+                        icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMTMuMDkgOC4yNkwyMCA5TDEzLjA5IDE1Ljc0TDEyIDIyTDEwLjkxIDE1Ljc0TDQgOUwxMC45MSA4LjI2TDEyIDJaIiBmaWxsPSIjMDBGRjAwIi8+Cjwvc3ZnPgo='
+                    });
+                }
+            });
+
+            socket.on('connect_error', (error) => {
+                console.error('WebSocket connection error:', error);
+                updateStatus('disconnected', `🔴 Errore connessione: ${error.message}`);
+            });
+
+            socket.on('disconnect', (reason) => {
+                console.log('WebSocket disconnected:', reason);
+                updateStatus('disconnected', `🔴 Disconnesso: ${reason}`);
+                addEvent('system', 'Connessione WebSocket chiusa', { reason });
+            });
+
+            socket.on('pong', (data) => {
+                addEvent('system', 'Pong ricevuto', data);
+            });
+
+            // Generic listener to capture all unhandled events
+            socket.onAny((eventName, ...args) => {
+                if (!['connect', 'disconnect', 'connect_error', 'order.paid', 'order.processing', 'order.sent', 'order.shipping', 'order.delivered', 'pong'].includes(eventName)) {
+                    console.log(`Evento WebSocket ricevuto: ${eventName}`, args);
+                    addEvent('unknown', `Evento: ${eventName}`, args[0] || args);
+                }
+            });
+        }
+
+        function updateStatus(type, message) {
+            statusEl.className = `status ${type}`;
+            statusEl.textContent = message;
+        }
+
+        function addEvent(type, title, data) {
+            const timestamp = new Date().toLocaleString('it-IT');
+            
+            events.unshift({
+                type,
+                title,
+                data,
+                timestamp
+            });
+
+            // Keep only the last 50 events
+            if (events.length > 50) {
+                events = events.slice(0, 50);
+            }
+
+            renderEvents();
+        }
+
+        function renderEvents() {
+            if (events.length === 0) {
+                eventsListEl.innerHTML = '<div class="no-events">Nessun evento ricevuto. Attendi notifiche dagli ordini...</div>';
+                return;
+            }
+
+            eventsListEl.innerHTML = events.map(event => `
+                <div class="event-item">
+                    <div class="event-header">
+                        <div class="event-type">${getEventIcon(event.type)} ${event.title}</div>
+                        <div class="event-timestamp">${event.timestamp}</div>
+                    </div>
+                    <div class="event-data">${JSON.stringify(event.data, null, 2)}</div>
+                </div>
+            `).join('');
+        }
+
+        function getEventIcon(type) {
+            switch(type) {
+                case 'order.paid': return '💰';
+                case 'order.processing': return '⚙️';
+                case 'order.sent': return '🚚';
+                case 'order.shipping': return '📦';
+                case 'order.delivered': return '✅';
+                case 'system': return '🔧';
+                case 'unknown': return '❓';
+                default: return '📨';
+            }
+        }
+
+        function clearEvents() {
+            events = [];
+            renderEvents();
+        }
+
+        // Request permission for notifications
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+
+        // Initialize on page load
+        window.addEventListener('load', () => {
+            if (checkAuth()) {
+                connectWebSocket();
+            }
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (socket) {
+                socket.disconnect();
+            }
+        });
+    </script>
+</body>
+</html>

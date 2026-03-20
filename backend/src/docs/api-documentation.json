@@ -1,0 +1,4359 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "ZenithStore Online API",
+    "description": "Complete REST API for managing users, customers, products, orders, payments, shipments, inventory, product reviews and questions in a professional e-commerce environment. Features JWT authentication, real-time WebSocket notifications, comprehensive order management workflow, MongoDB-powered review/Q&A system with moderation, and robust inventory tracking with full CRUD operations across all resources.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "ZenithStore Online Support",
+      "email": "support@zenithstore.marketplace"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    },
+    "termsOfService": "https://zenithstore.marketplace/terms"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Development server"
+    },
+    {
+      "url": "https://api.zenithstore.marketplace",
+      "description": "Production server"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT token obtained from login endpoint"
+      }
+    },
+    "schemas": {
+      "ApiResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Indicates if the operation was successful"
+          },
+          "message": {
+            "type": "string",
+            "description": "Human readable message describing the result"
+          },
+          "data": {
+            "description": "Response payload data (varies by endpoint)"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "message": {
+            "type": "string",
+            "description": "Error message describing what went wrong"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Detailed error list (validation errors, etc.)"
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 15,
+            "description": "Unique user identifier"
+          },
+          "firstName": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "User's first name"
+          },
+          "lastName": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "User's last name"
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Whether the user is active"
+          },
+          "isBlocked": {
+            "type": "boolean",
+            "description": "Whether the user is temporarily blocked"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "User creation date"
+          }
+        }
+      },
+      "Customer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Unique customer identifier"
+          },
+          "firstName": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Customer's first name"
+          },
+          "lastName": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Customer's last name"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Customer's email address"
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Whether the customer is active"
+          },
+          "isBlocked": {
+            "type": "boolean",
+            "description": "Whether the customer is temporarily blocked"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Customer creation date"
+          }
+        }
+      },
+      "Product": {
+        "type": "object",
+        "properties": {
+          "productCode": {
+            "type": "string",
+            "maxLength": 20,
+            "description": "Unique product code"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "description": "Product name"
+          },
+          "description": {
+            "type": "string",
+            "description": "Product description"
+          },
+          "price": {
+            "type": "number",
+            "format": "decimal",
+            "description": "Current product price"
+          },
+          "category": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Product category"
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Whether the product is active"
+          },
+          "inventory": {
+            "$ref": "#/components/schemas/Inventory"
+          }
+        }
+      },
+      "Inventory": {
+        "type": "object",
+        "properties": {
+          "availableQuantity": {
+            "type": "integer",
+            "description": "Available quantity for sale"
+          },
+          "reservedQuantity": {
+            "type": "integer",
+            "description": "Quantity reserved for orders"
+          },
+          "totalQuantity": {
+            "type": "integer",
+            "description": "Total quantity (available + reserved)"
+          },
+          "safetyStock": {
+            "type": "integer",
+            "description": "Minimum stock level threshold"
+          },
+          "availableToSell": {
+            "type": "integer",
+            "description": "Quantity available for new orders (available - safety stock)"
+          }
+        }
+      },
+      "Category": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Unique category identifier"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Category name"
+          },
+          "slug": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "URL-friendly slug"
+          },
+          "description": {
+            "type": "string",
+            "description": "Category description"
+          },
+          "icon": {
+            "type": "string",
+            "maxLength": 50,
+            "description": "Icon identifier"
+          },
+          "displayOrder": {
+            "type": "integer",
+            "description": "Display order for sorting"
+          },
+          "isActive": {
+            "type": "integer",
+            "enum": [0, 1],
+            "description": "Active status (1=active, 0=inactive)"
+          }
+        }
+      },
+      "CategoryDetail": {
+        "allOf": [
+          {"$ref": "#/components/schemas/Category"},
+          {
+            "type": "object",
+            "properties": {
+              "createdAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Category creation timestamp"
+              },
+              "createdBy": {
+                "type": "string",
+                "maxLength": 15,
+                "description": "User ID who created the category"
+              }
+            }
+          }
+        ]
+      },
+      "Order": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "integer",
+            "description": "Unique order identifier"
+          },
+          "customerId": {
+            "type": "integer",
+            "description": "Customer who placed the order"
+          },
+          "customerName": {
+            "type": "string",
+            "description": "Customer's full name"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["CART", "RESERVED", "EXPIRED", "NEW", "PROCESSING", "SHIPPING", "SHIPPED", "DELIVERED", "CANCELLED"],
+            "description": "Current order status"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Order creation date"
+          },
+          "lastUpdated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last update timestamp"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderItem"
+            }
+          },
+          "summary": {
+            "$ref": "#/components/schemas/OrderSummary"
+          },
+          "shippingAddress": {
+            "$ref": "#/components/schemas/ShippingAddress"
+          }
+        }
+      },
+      "OrderItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Order item identifier"
+          },
+          "productCode": {
+            "type": "string",
+            "description": "Product code"
+          },
+          "productName": {
+            "type": "string",
+            "description": "Product name"
+          },
+          "unitPrice": {
+            "type": "number",
+            "format": "decimal",
+            "description": "Price per unit"
+          },
+          "quantity": {
+            "type": "integer",
+            "description": "Ordered quantity"
+          },
+          "totalPrice": {
+            "type": "number",
+            "format": "decimal",
+            "description": "Total price for this item (unitPrice * quantity)"
+          }
+        }
+      },
+      "OrderSummary": {
+        "type": "object",
+        "properties": {
+          "totalItems": {
+            "type": "integer",
+            "description": "Number of different products in the order"
+          },
+          "totalQuantity": {
+            "type": "integer",
+            "description": "Total quantity of all items"
+          },
+          "totalAmount": {
+            "type": "number",
+            "format": "decimal",
+            "description": "Total order amount"
+          }
+        }
+      },
+      "ShippingAddress": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string",
+            "description": "Recipient's first name"
+          },
+          "lastName": {
+            "type": "string",
+            "description": "Recipient's last name"
+          },
+          "addressLine": {
+            "type": "string",
+            "description": "Street address"
+          },
+          "city": {
+            "type": "string",
+            "description": "City name"
+          },
+          "postalCode": {
+            "type": "string",
+            "description": "Postal code"
+          },
+          "province": {
+            "type": "string",
+            "description": "Province or state"
+          }
+        },
+        "required": ["firstName", "lastName", "addressLine", "city", "postalCode", "province"]
+      },
+      "LoginCredentials": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "maxLength": 15,
+            "description": "User identifier for technical users"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Email address for customer login"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "description": "User/customer password (minimum 8 characters)"
+          }
+        }
+      },
+      "UserCreate": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "maxLength": 15,
+            "description": "Unique user identifier"
+          },
+          "firstName": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "User's first name"
+          },
+          "lastName": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "User's last name"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "description": "Initial password (minimum 8 characters)"
+          }
+        },
+        "required": ["userId", "firstName", "lastName", "password"]
+      },
+      "CustomerCreate": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Customer's first name"
+          },
+          "lastName": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Customer's last name"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Customer's email address (must be unique)"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "description": "Initial password (minimum 8 characters)"
+          }
+        },
+        "required": ["firstName", "lastName", "email", "password"]
+      },
+      "PasswordUpdate": {
+        "type": "object",
+        "properties": {
+          "password": {
+            "type": "string",
+            "description": "Current password"
+          },
+          "newPassword": {
+            "type": "string",
+            "minLength": 8,
+            "description": "New password (minimum 8 characters)"
+          }
+        },
+        "required": ["password", "newPassword"]
+      },
+      "ProductCreate": {
+        "type": "object",
+        "properties": {
+          "productCode": {
+            "type": "string",
+            "maxLength": 20,
+            "description": "Unique product code"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "description": "Product name"
+          },
+          "description": {
+            "type": "string",
+            "description": "Product description"
+          },
+          "price": {
+            "type": "number",
+            "format": "decimal",
+            "minimum": 0,
+            "description": "Product price (must be positive)"
+          },
+          "categorySlug": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Product category slug"
+          },
+          "initialQuantity": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Initial inventory quantity"
+          },
+          "safetyStock": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0,
+            "description": "Minimum stock level threshold"
+          }
+        },
+        "required": ["productCode", "name", "price", "categorySlug"]
+      },
+      "ProductUpdate": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "description": "Updated product name"
+          },
+          "description": {
+            "type": "string",
+            "description": "Updated product description"
+          },
+          "price": {
+            "type": "number",
+            "format": "decimal",
+            "minimum": 0,
+            "description": "Updated product price"
+          },
+          "categorySlug": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Updated product category slug"
+          }
+        }
+      },
+      "InventoryUpdate": {
+        "type": "object",
+        "properties": {
+          "availableQuantity": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "New available quantity"
+          },
+          "safetyStock": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Updated safety stock level"
+          }
+        },
+        "required": ["availableQuantity"]
+      },
+      "SearchFilters": {
+        "type": "object",
+        "properties": {
+          "searchTerm": {
+            "type": "string",
+            "description": "General search term for text fields"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 1,
+            "description": "Page number for pagination"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 50,
+            "description": "Number of items per page (max 100)"
+          },
+          "sortBy": {
+            "type": "string",
+            "description": "Field to sort by"
+          },
+          "sortOrder": {
+            "type": "string",
+            "enum": ["ASC", "DESC"],
+            "default": "ASC",
+            "description": "Sort direction"
+          }
+        }
+      },
+      "PaginatedResponse": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "description": "Array of result items"
+          },
+          "total": {
+            "type": "integer",
+            "description": "Total number of matching items"
+          },
+          "page": {
+            "type": "integer",
+            "description": "Current page number"
+          },
+          "totalPages": {
+            "type": "integer",
+            "description": "Total number of pages"
+          },
+          "hasNextPage": {
+            "type": "boolean",
+            "description": "Whether there are more pages"
+          },
+          "hasPreviousPage": {
+            "type": "boolean",
+            "description": "Whether there are previous pages"
+          }
+        }
+      },
+      "ValidationError": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string",
+            "description": "Field that failed validation"
+          },
+          "message": {
+            "type": "string",
+            "description": "Validation error message"
+          },
+          "value": {
+            "description": "Invalid value that was provided"
+          }
+        }
+      },
+      "Shipment": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Shipment identifier"
+          },
+          "orderId": {
+            "type": "integer",
+            "description": "Associated order ID"
+          },
+          "trackingCode": {
+            "type": "string",
+            "description": "Carrier tracking code"
+          },
+          "carrier": {
+            "type": "string",
+            "description": "Shipping carrier name"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["CREATED", "PICKED_UP", "IN_TRANSIT", "OUT_FOR_DELIVERY", "DELIVERED", "FAILED"],
+            "description": "Current shipment status"
+          },
+          "estimatedDelivery": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Estimated delivery date"
+          },
+          "shipmentDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Actual shipping date"
+          },
+          "deliveryDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Actual delivery date"
+          }
+        }
+      },
+      "WishlistItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Wishlist item identifier"
+          },
+          "customerId": {
+            "type": "integer",
+            "description": "Customer identifier"
+          },
+          "productCode": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Product code"
+          },
+          "addedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Date when product was added to wishlist"
+          },
+          "product": {
+            "type": "object",
+            "description": "Product details",
+            "properties": {
+              "productCode": {
+                "type": "string",
+                "description": "Product code"
+              },
+              "name": {
+                "type": "string",
+                "description": "Product name"
+              },
+              "description": {
+                "type": "string",
+                "description": "Product description"
+              },
+              "price": {
+                "type": "number",
+                "format": "decimal",
+                "description": "Current product price"
+              },
+              "isActive": {
+                "type": "boolean",
+                "description": "Whether the product is active"
+              }
+            }
+          }
+        }
+      },
+      "Notification": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string",
+            "description": "Notification identifier"
+          },
+          "customerId": {
+            "type": "integer",
+            "description": "Customer identifier"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["order", "offer", "advertising", "promo_personalized"],
+            "description": "Notification type"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "Notification title"
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 1000,
+            "description": "Notification message"
+          },
+          "icon": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Optional icon identifier"
+          },
+          "link": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Optional link URL"
+          },
+          "priority": {
+            "type": "string",
+            "enum": ["low", "normal", "high", "urgent"],
+            "default": "normal",
+            "description": "Notification priority"
+          },
+          "isRead": {
+            "type": "boolean",
+            "description": "Whether the notification has been read"
+          },
+          "isDelivered": {
+            "type": "boolean",
+            "description": "Whether the notification has been delivered via WebSocket"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Notification creation date"
+          },
+          "readAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Date when notification was read"
+          },
+          "deliveredAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Date when notification was delivered"
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["System"],
+        "summary": "Health check",
+        "description": "Get system health status including database connection, WebSocket status, and memory usage",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "System is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {"type": "string", "example": "OK"},
+                    "timestamp": {"type": "string", "format": "date-time"},
+                    "uptime": {"type": "number", "description": "Server uptime in seconds"},
+                    "environment": {"type": "string", "example": "development"},
+                    "database": {"type": "string", "example": "connected"},
+                    "websocket": {
+                      "type": "object",
+                      "properties": {
+                        "status": {"type": "string", "example": "active"},
+                        "connectedTechnicalUsers": {"type": "integer"}
+                      }
+                    },
+                    "memory": {
+                      "type": "object", 
+                      "properties": {
+                        "used": {"type": "string", "example": "45 MB"},
+                        "total": {"type": "string", "example": "128 MB"}
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/docs": {
+      "get": {
+        "tags": ["System"],
+        "summary": "API Documentation",
+        "description": "Get complete OpenAPI specification for this API",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "API documentation retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Complete OpenAPI 3.0.3 specification"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user-interface": {
+      "get": {
+        "tags": ["System"],
+        "summary": "WebSocket Test Interface",
+        "description": "Access the HTML test interface for WebSocket events monitoring",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "HTML test interface page",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string",
+                  "description": "HTML page with WebSocket test interface"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "List all users",
+        "description": "Get a list of all active technical users (admin function, localhost only)",
+        "security": [],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {"type": "integer", "minimum": 1, "default": 1},
+            "description": "Page number for pagination"
+          },
+          {
+            "name": "limit", 
+            "in": "query",
+            "schema": {"type": "integer", "minimum": 1, "maximum": 100, "default": 50},
+            "description": "Number of items per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Users retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {"$ref": "#/components/schemas/ApiResponse"},
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "users": {
+                              "type": "array",
+                              "items": {"$ref": "#/components/schemas/User"}
+                            },
+                            "count": {"type": "integer", "description": "Number of users returned"}
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Users"],
+        "summary": "Create new user",
+        "description": "Create a new technical user (admin function, localhost only)",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/UserCreate"}
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {"$ref": "#/components/schemas/ApiResponse"},
+                    {
+                      "properties": {
+                        "data": {"$ref": "#/components/schemas/User"}
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "User with this ID already exists"
+          }
+        }
+      }
+    },
+    "/api/users/{id}": {
+      "delete": {
+        "tags": ["Users"],
+        "summary": "Delete user",
+        "description": "Soft delete a technical user (admin function, localhost only)",
+        "security": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "User ID to delete"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User deleted successfully"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    },
+    "/api/users/{id}/password": {
+      "patch": {
+        "tags": ["Users"],
+        "summary": "Update user password",
+        "description": "Update password for a technical user (localhost only)",
+        "security": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path", 
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "User ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/PasswordUpdate"}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password updated successfully"
+          },
+          "400": {
+            "description": "Invalid current password or password validation failed"
+          }
+        }
+      }
+    },
+    "/api/users/login": {
+      "post": {
+        "tags": ["Users"],
+        "summary": "User authentication",
+        "description": "Authenticate a technical user and receive a JWT token for API access (localhost only)",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "userId": {
+                    "type": "string",
+                    "maxLength": 15,
+                    "description": "User identifier"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 8,
+                    "description": "User password (minimum 8 characters)"
+                  }
+                },
+                "required": ["userId", "password"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {"$ref": "#/components/schemas/ApiResponse"},
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "token": {
+                              "type": "string",
+                              "description": "JWT token for authentication"
+                            },
+                            "user": {
+                              "$ref": "#/components/schemas/User"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials or user blocked"
+          },
+          "429": {
+            "description": "Too many login attempts - rate limited"
+          }
+        }
+      }
+    },
+    "/api/users/search": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Search users",
+        "description": "Advanced user search with multiple criteria (admin function, localhost only)",
+        "security": [],
+        "parameters": [
+          {
+            "name": "searchTerm",
+            "in": "query",
+            "schema": {"type": "string"},
+            "description": "Search in user ID, first name, last name (partial match)"
+          },
+          {
+            "name": "isActive",
+            "in": "query",
+            "schema": {"type": "boolean"},
+            "description": "Filter by active status"
+          },
+          {
+            "name": "isBlocked",
+            "in": "query", 
+            "schema": {"type": "boolean"},
+            "description": "Filter by blocked status"
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "schema": {"type": "string", "format": "date"},
+            "description": "Filter users created after this date"
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "schema": {"type": "string", "format": "date"},
+            "description": "Filter users created before this date"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {"type": "integer", "minimum": 1, "default": 1}
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {"type": "integer", "minimum": 1, "maximum": 100, "default": 50}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {"$ref": "#/components/schemas/ApiResponse"},
+                    {
+                      "properties": {
+                        "data": {
+                          "allOf": [
+                            {"$ref": "#/components/schemas/PaginatedResponse"},
+                            {
+                              "properties": {
+                                "items": {
+                                  "type": "array",
+                                  "items": {"$ref": "#/components/schemas/User"}
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/api/users/profile/logout": {
+      "post": {
+        "tags": ["Users"],
+        "summary": "User logout",
+        "description": "Logout and blacklist current JWT token (localhost only, JWT required)",
+        "responses": {
+          "200": {
+            "description": "Logout successful"
+          },
+          "401": {
+            "description": "Invalid or missing JWT token"
+          }
+        }
+      }
+    },
+    "/api/users/{id}/reset-password": {
+      "post": {
+        "tags": ["Users"],
+        "summary": "Reset user password",
+        "description": "Force password reset for a user (admin function, localhost only)",
+        "security": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "User ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "newPassword": {
+                    "type": "string",
+                    "minLength": 8,
+                    "description": "New password to set"
+                  }
+                },
+                "required": ["newPassword"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password reset successfully"
+          }
+        }
+      }
+    },
+    "/api/users/{id}/block": {
+      "post": {
+        "tags": ["Users"],
+        "summary": "Block user",
+        "description": "Temporarily block a technical user (admin function, localhost only)",
+        "security": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "User ID to block"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User blocked successfully"
+          }
+        }
+      }
+    },
+    "/api/users/{id}/unblock": {
+      "post": {
+        "tags": ["Users"],
+        "summary": "Unblock user",
+        "description": "Remove temporary block from a technical user (admin function, localhost only)",
+        "security": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "User ID to unblock"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User unblocked successfully"
+          }
+        }
+      }
+    },
+
+    "/api/customers/search": {
+      "get": {
+        "tags": ["Customers"],
+        "summary": "Search customers",
+        "description": "Advanced customer search with multiple criteria (admin function, localhost only)",
+        "security": [],
+        "parameters": [
+          {
+            "name": "searchTerm",
+            "in": "query",
+            "schema": {"type": "string"},
+            "description": "Search in customer name, email (partial match)"
+          },
+          {
+            "name": "email",
+            "in": "query",
+            "schema": {"type": "string", "format": "email"},
+            "description": "Filter by specific email address"
+          },
+          {
+            "name": "isActive",
+            "in": "query",
+            "schema": {"type": "boolean"},
+            "description": "Filter by active status"
+          },
+          {
+            "name": "isBlocked",
+            "in": "query",
+            "schema": {"type": "boolean"},
+            "description": "Filter by blocked status"
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "schema": {"type": "string", "format": "date"},
+            "description": "Filter customers created after this date"
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "schema": {"type": "string", "format": "date"},
+            "description": "Filter customers created before this date"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {"type": "integer", "minimum": 1, "default": 1}
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {"type": "integer", "minimum": 1, "maximum": 100, "default": 50}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {"$ref": "#/components/schemas/ApiResponse"},
+                    {
+                      "properties": {
+                        "data": {
+                          "allOf": [
+                            {"$ref": "#/components/schemas/PaginatedResponse"},
+                            {
+                              "properties": {
+                                "items": {
+                                  "type": "array",
+                                  "items": {"$ref": "#/components/schemas/Customer"}
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/customers/profile": {
+      "get": {
+        "tags": ["Customers"],
+        "summary": "Get customer profile",
+        "description": "Get authenticated customer's profile information (JWT required)",
+        "responses": {
+          "200": {
+            "description": "Customer profile retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {"$ref": "#/components/schemas/ApiResponse"},
+                    {
+                      "properties": {
+                        "data": {"$ref": "#/components/schemas/Customer"}
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Customers"],
+        "summary": "Delete customer profile", 
+        "description": "Soft delete the authenticated customer's account (JWT required)",
+        "responses": {
+          "200": {
+            "description": "Customer account deleted successfully"
+          }
+        }
+      }
+    },
+    "/api/customers": {
+      "get": {
+        "tags": ["Customers"],
+        "summary": "List all customers",
+        "description": "Get a list of all active customers (admin function, localhost only)",
+        "security": [],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {"type": "integer", "minimum": 1, "default": 1}
+          },
+          {
+            "name": "limit",
+            "in": "query", 
+            "schema": {"type": "integer", "minimum": 1, "maximum": 100, "default": 50}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Customers retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "customers": {
+                          "type": "array",
+                          "items": {"$ref": "#/components/schemas/Customer"}
+                        },
+                        "totalCount": {
+                          "type": "integer"
+                        },
+                        "page": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied - localhost only"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Customers"],
+        "summary": "Create new customer",
+        "description": "Register a new customer account in the system",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password", "firstName", "lastName", "phone", "address"],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "Customer email address"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 8,
+                    "description": "Customer password (min 8 characters)"
+                  },
+                  "firstName": {
+                    "type": "string",
+                    "description": "Customer first name"
+                  },
+                  "lastName": {
+                    "type": "string",
+                    "description": "Customer last name"
+                  },
+                  "phone": {
+                    "type": "string",
+                    "description": "Customer phone number"
+                  },
+                  "address": {
+                    "type": "string",
+                    "description": "Customer address"
+                  },
+                  "city": {
+                    "type": "string",
+                    "description": "Customer city"
+                  },
+                  "postalCode": {
+                    "type": "string",
+                    "description": "Customer postal code"
+                  },
+                  "country": {
+                    "type": "string",
+                    "description": "Customer country"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Customer created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "customerId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data"
+          },
+          "409": {
+            "description": "Customer already exists"
+          }
+        }
+      }
+    },
+    "/api/customers/password": {
+      "patch": {
+        "tags": ["Customers"],
+        "summary": "Update customer password",
+        "description": "Change customer password with current password verification. Requires email, current password and new password.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password", "newPassword"],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "Customer email address"
+                  },
+                  "password": {
+                    "type": "string",
+                    "description": "Current customer password"
+                  },
+                  "newPassword": {
+                    "type": "string",
+                    "minLength": 8,
+                    "description": "New password (min 8 characters)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password updated successfully"
+          },
+          "400": {
+            "description": "Invalid input data"
+          },
+          "401": {
+            "description": "Current password incorrect"
+          },
+          "404": {
+            "description": "Customer not found"
+          }
+        }
+      }
+    },
+    "/api/customers/reset-password": {
+      "post": {
+        "tags": ["Customers"],
+        "summary": "Reset customer password (admin)",
+        "description": "Admin function to force reset a customer's password (localhost only)",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "newPassword"],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "Customer email address"
+                  },
+                  "newPassword": {
+                    "type": "string",
+                    "minLength": 8,
+                    "description": "New password to set (min 8 characters)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password reset successfully"
+          },
+          "400": {
+            "description": "Invalid input data"
+          },
+          "403": {
+            "description": "Access denied - localhost only"
+          },
+          "404": {
+            "description": "Customer not found"
+          }
+        }
+      }
+    },
+    "/api/customers/login": {
+      "post": {
+        "tags": ["Customers"],
+        "summary": "Customer authentication",
+        "description": "Authenticate a customer and receive a JWT token for API access",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "Customer email address"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 8,
+                    "description": "Customer password (minimum 8 characters)"
+                  }
+                },
+                "required": ["email", "password"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {"$ref": "#/components/schemas/ApiResponse"},
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "token": {
+                              "type": "string",
+                              "description": "JWT token for authentication"
+                            },
+                            "customer": {
+                              "$ref": "#/components/schemas/Customer"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials or customer blocked"
+          },
+          "429": {
+            "description": "Too many login attempts - rate limited"
+          }
+        }
+      }
+    },
+
+    "/api/customers/profile/logout": {
+      "post": {
+        "tags": ["Customers"],
+        "summary": "Customer logout",
+        "description": "Logout and blacklist current JWT token (JWT required)",
+        "responses": {
+          "200": {
+            "description": "Logout successful"
+          }
+        }
+      }
+    },
+    "/api/customers/{id}/block": {
+      "post": {
+        "tags": ["Customers"],
+        "summary": "Block customer",
+        "description": "Temporarily block a customer (admin function, localhost only)",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "integer"},
+            "description": "Customer ID to block"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Customer blocked successfully"
+          }
+        }
+      }
+    },
+    "/api/customers/{id}/unblock": {
+      "post": {
+        "tags": ["Customers"],
+        "summary": "Unblock customer",
+        "description": "Remove temporary block from a customer (admin function, localhost only)",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "integer"},
+            "description": "Customer ID to unblock"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Customer unblocked successfully"
+          }
+        }
+      }
+    },
+    "/api/orders/checkout": {
+      "post": {
+        "tags": ["Orders"],
+        "summary": "Create order from frontend cart",
+        "description": "Create a new order from frontend cart, validate stock availability, and reserve inventory. Customer JWT required.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["items"],
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["productCode", "quantity"],
+                      "properties": {
+                        "productCode": {
+                          "type": "string",
+                          "description": "Product code"
+                        },
+                        "quantity": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "description": "Item quantity"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "example": {
+                "items": [
+                  {"productCode": "LAPTOP-001", "quantity": 1},
+                  {"productCode": "MOUSE-002", "quantity": 2}
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Order created successfully - inventory reserved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {"$ref": "#/components/schemas/ApiResponse"},
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "valid": {"type": "boolean", "example": true},
+                            "order": {
+                              "type": "object",
+                              "properties": {
+                                "id": {"type": "integer"},
+                                "status": {"type": "string", "example": "RESERVED"},
+                                "totalAmount": {"type": "number"},
+                                "reservedAt": {"type": "string", "format": "date-time"}
+                              }
+                            },
+                            "unavailableProducts": {"type": "array", "items": {}}
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Checkout failed - insufficient inventory",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {"$ref": "#/components/schemas/ApiResponse"},
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "valid": {"type": "boolean", "example": false},
+                            "unavailableProducts": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "productCode": {"type": "string"},
+                                  "requested": {"type": "integer"},
+                                  "availableToSell": {"type": "integer"}
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request - empty cart or validation error"
+          }
+        }
+      }
+    },
+    "/api/orders/{id}": {
+      "get": {
+        "tags": ["Orders"],
+        "summary": "Get order details",
+        "description": "Retrieve complete order information including items and shipping details",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Order ID to retrieve"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order details retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {"$ref": "#/components/schemas/ApiResponse"},
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/Order"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Order not found"
+          }
+        }
+      }
+    },
+    "/api/orders/{id}/shipping": {
+      "post": {
+        "tags": ["Orders"],
+        "summary": "Add shipping address to RESERVED order",
+        "description": "Add shipping address to a RESERVED order. Customer JWT required.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "integer"},
+            "description": "Order ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["shippingAddress"],
+                "properties": {
+                  "shippingAddress": {
+                    "$ref": "#/components/schemas/ShippingAddress"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Shipping address added successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {"$ref": "#/components/schemas/ApiResponse"},
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "orderId": {"type": "integer"},
+                            "status": {"type": "string", "example": "RESERVED"},
+                            "shippingAddress": {"$ref": "#/components/schemas/ShippingAddress"}
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Order is not in RESERVED status"
+          },
+          "404": {
+            "description": "Order not found"
+          }
+        }
+      }
+    },
+    "/api/orders/search": {
+      "get": {
+        "tags": ["Orders"],
+        "summary": "Search orders",
+        "description": "Advanced order search with multiple filters and pagination",
+        "parameters": [
+          {
+            "name": "searchTerm",
+            "in": "query",
+            "schema": {"type": "string"},
+            "description": "Search in customer name, order ID (partial match)"
+          },
+          {
+            "name": "customerId",
+            "in": "query",
+            "schema": {"type": "integer"},
+            "description": "Filter by specific customer ID"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {"type": "string", "enum": ["CART", "RESERVED", "EXPIRED", "NEW", "PROCESSING", "SHIPPING", "SHIPPED", "DELIVERED", "CANCELLED"]},
+            "description": "Filter by order status"
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "schema": {"type": "string", "format": "date"},
+            "description": "Filter orders created after this date (YYYY-MM-DD)"
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "schema": {"type": "string", "format": "date"},
+            "description": "Filter orders created before this date (YYYY-MM-DD)"
+          },
+          {
+            "name": "minAmount",
+            "in": "query",
+            "schema": {"type": "number"},
+            "description": "Filter orders with total amount >= this value"
+          },
+          {
+            "name": "maxAmount",
+            "in": "query",
+            "schema": {"type": "number"},
+            "description": "Filter orders with total amount <= this value"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {"type": "integer", "minimum": 1, "default": 1},
+            "description": "Page number for pagination"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {"type": "integer", "minimum": 1, "maximum": 100, "default": 50},
+            "description": "Number of items per page (max 100)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {"$ref": "#/components/schemas/ApiResponse"},
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "items": {
+                              "type": "array",
+                              "items": {"$ref": "#/components/schemas/Order"}
+                            },
+                            "total": {"type": "integer", "description": "Total number of matching orders"},
+                            "page": {"type": "integer", "description": "Current page number"},
+                            "totalPages": {"type": "integer", "description": "Total number of pages"},
+                            "hasNextPage": {"type": "boolean", "description": "Whether there are more pages"},
+                            "hasPreviousPage": {"type": "boolean", "description": "Whether there are previous pages"}
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/api/orders/{id}/process": {
+      "patch": {
+        "tags": ["Orders"],
+        "summary": "Process order",
+        "description": "Move order from NEW status to PROCESSING, assigning it to a technical user (localhost only, JWT required)",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "integer"},
+            "description": "Order ID to process"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "managedBy": {
+                    "type": "string",
+                    "description": "Technical user ID who will manage this order"
+                  },
+                  "notes": {
+                    "type": "string",
+                    "description": "Optional processing notes"
+                  }
+                },
+                "required": ["managedBy"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Order processing started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {"$ref": "#/components/schemas/ApiResponse"},
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "orderId": {"type": "integer"},
+                            "status": {"type": "string", "example": "PROCESSING"},
+                            "managedBy": {"type": "string"},
+                            "processedAt": {"type": "string", "format": "date-time"}
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Order is not in NEW status or invalid manager"
+          }
+        }
+      }
+    },
+    "/api/orders/{id}/ship": {
+      "post": {
+        "tags": ["Orders"],
+        "summary": "Create shipment",
+        "description": "Create a shipment for a PROCESSING order (localhost only, JWT required)",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "integer"},
+            "description": "Order ID to ship"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "carrier": {
+                    "type": "string",
+                    "description": "Shipping carrier name (e.g., 'UPS', 'FedEx', 'DHL')"
+                  },
+                  "trackingCode": {
+                    "type": "string",
+                    "description": "Tracking code from the carrier"
+                  },
+                  "estimatedDelivery": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Estimated delivery date and time"
+                  }
+                },
+                "required": ["carrier", "trackingCode"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Shipment created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {"$ref": "#/components/schemas/ApiResponse"},
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "orderId": {"type": "integer"},
+                            "status": {"type": "string", "example": "SHIPPING"},
+                            "shipment": {"$ref": "#/components/schemas/Shipment"}
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Order is not in PROCESSING status"
+          }
+        }
+      }
+    },
+    "/api/orders/{id}/ship/sent": {
+      "patch": {
+        "tags": ["Orders"],
+        "summary": "Mark shipment as sent",
+        "description": "Mark the shipment as sent and update order status to SHIPPED (localhost only, JWT required)",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "integer"},
+            "description": "Order ID"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "shipmentDate": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Actual shipping date (defaults to current time)"
+                  },
+                  "notes": {
+                    "type": "string",
+                    "description": "Optional shipping notes"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Shipment marked as sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {"$ref": "#/components/schemas/ApiResponse"},
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "orderId": {"type": "integer"},
+                            "status": {"type": "string", "example": "SHIPPED"},
+                            "shipment": {"$ref": "#/components/schemas/Shipment"},
+                            "sentAt": {"type": "string", "format": "date-time"}
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Order is not in SHIPPING status"
+          }
+        }
+      }
+    },
+
+    "/api/payments": {
+      "post": {
+        "tags": ["Payments"],
+        "summary": "Initiate payment",
+        "description": "Start payment process for a RESERVED order. Returns payment URL and session details.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "orderId": {
+                    "type": "integer",
+                    "description": "Order ID to pay for"
+                  },
+                  "paymentMethod": {
+                    "type": "string",
+                    "enum": ["STRIPE", "PAYPAL", "CREDIT_CARD"],
+                    "description": "Selected payment method"
+                  }
+                },
+                "required": ["orderId", "paymentMethod"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment session created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {"$ref": "#/components/schemas/ApiResponse"},
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "transactionId": {"type": "string"},
+                            "paymentProvider": {"type": "string"},
+                            "paymentUrl": {"type": "string"},
+                            "sessionId": {"type": "string"},
+                            "expiresAt": {"type": "string", "format": "date-time"},
+                            "order": {
+                              "type": "object",
+                              "properties": {
+                                "id": {"type": "integer"},
+                                "status": {"type": "string"},
+                                "totalAmount": {"type": "number"}
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/payments/webhook": {
+      "post": {
+        "tags": ["Payments"],
+        "summary": "Payment webhook",
+        "description": "Handle payment status updates from payment providers. Updates order status based on payment result.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": ["COMPLETED", "FAILED", "CANCELLED"],
+                    "description": "Payment status from provider"
+                  },
+                  "transactionId": {
+                    "type": "string",
+                    "description": "Transaction identifier"
+                  },
+                  "timestamp": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Payment processing timestamp"
+                  },
+                  "orderId": {
+                    "type": "integer",
+                    "description": "Associated order ID (optional)"
+                  }
+                },
+                "required": ["status", "transactionId", "timestamp"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Webhook processed successfully"
+          }
+        }
+      }
+    },
+    "/api/products": {
+      "get": {
+        "tags": ["Products"],
+        "summary": "List products",
+        "description": "Get all active products with current inventory levels (localhost only, JWT required)",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {"type": "integer", "minimum": 1, "default": 1},
+            "description": "Page number"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {"type": "integer", "minimum": 1, "maximum": 100, "default": 50},
+            "description": "Items per page"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {"type": "string"},
+            "description": "Filter by product category"
+          },
+          {
+            "name": "lowStock",
+            "in": "query",
+            "schema": {"type": "boolean"},
+            "description": "Show only products with low stock (below safety level)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Products retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {"$ref": "#/components/schemas/ApiResponse"},
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {"$ref": "#/components/schemas/Product"}
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Products"],
+        "summary": "Create new product",
+        "description": "Create a new product with initial inventory (localhost only, JWT required)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/ProductCreate"},
+              "examples": {
+                "basicProduct": {
+                  "summary": "Basic product example",
+                  "value": {
+                    "productCode": "PROD001",
+                    "name": "Wireless Headphones",
+                    "description": "High-quality wireless headphones with noise cancellation",
+                    "price": 99.99,
+                    "categorySlug": "electronics",
+                    "initialQuantity": 50,
+                    "safetyStock": 10
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Product created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {"$ref": "#/components/schemas/ApiResponse"},
+                    {
+                      "properties": {
+                        "data": {"$ref": "#/components/schemas/Product"}
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Product with this code already exists"
+          }
+        }
+      }
+    },
+    "/api/products/search": {
+      "get": {
+        "tags": ["Products"],
+        "summary": "Search products",
+        "description": "Advanced product search with filters (public access, no authentication required)",
+        "security": [],
+        "parameters": [
+          {
+            "name": "searchTerm",
+            "in": "query",
+            "schema": {"type": "string"},
+            "description": "Search in product code, name, description (partial match)"
+          },
+          {
+            "name": "categorySlug",
+            "in": "query",
+            "schema": {"type": "string"},
+            "description": "Filter by product category slug"
+          },
+          {
+            "name": "priceMin",
+            "in": "query",
+            "schema": {"type": "number"},
+            "description": "Filter products with price >= this value"
+          },
+          {
+            "name": "priceMax",
+            "in": "query",
+            "schema": {"type": "number"},
+            "description": "Filter products with price <= this value"
+          },
+          {
+            "name": "inStock",
+            "in": "query",
+            "schema": {"type": "boolean"},
+            "description": "Filter products with available inventory"
+          },
+          {
+            "name": "lowStock",
+            "in": "query",
+            "schema": {"type": "boolean"},
+            "description": "Show only products with low stock"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {"type": "integer", "minimum": 1, "default": 1}
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {"type": "integer", "minimum": 1, "maximum": 100, "default": 50}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {"$ref": "#/components/schemas/ApiResponse"},
+                    {
+                      "properties": {
+                        "data": {
+                          "allOf": [
+                            {"$ref": "#/components/schemas/PaginatedResponse"},
+                            {
+                              "properties": {
+                                "items": {
+                                  "type": "array",
+                                  "items": {"$ref": "#/components/schemas/Product"}
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/products/{productCode}": {
+      "get": {
+        "tags": ["Products"],
+        "summary": "Get product by code",
+        "description": "Get specific product details with inventory (public access, no authentication required)",
+        "security": [],
+        "parameters": [
+          {
+            "name": "productCode",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "Product code to retrieve"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Product retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {"$ref": "#/components/schemas/ApiResponse"},
+                    {
+                      "properties": {
+                        "data": {"$ref": "#/components/schemas/Product"}
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Product not found"
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Products"],
+        "summary": "Update product",
+        "description": "Update product details (name, description, price, category) - localhost only, JWT required",
+        "parameters": [
+          {
+            "name": "productCode",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "Product code to update"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/ProductUpdate"},
+              "examples": {
+                "priceUpdate": {
+                  "summary": "Update product price",
+                  "value": {
+                    "price": 89.99
+                  }
+                },
+                "fullUpdate": {
+                  "summary": "Update all product fields",
+                  "value": {
+                    "name": "Premium Wireless Headphones",
+                    "description": "Updated description with new features",
+                    "price": 129.99,
+                    "category": "Premium Electronics"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Product updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {"$ref": "#/components/schemas/ApiResponse"},
+                    {
+                      "properties": {
+                        "data": {"$ref": "#/components/schemas/Product"}
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Product not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Products"],
+        "summary": "Delete product",
+        "description": "Soft delete a product (localhost only, JWT required)",
+        "parameters": [
+          {
+            "name": "productCode",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "Product code to delete"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Product deleted successfully"
+          },
+          "404": {
+            "description": "Product not found"
+          }
+        }
+      }
+    },
+    "/api/products/{productCode}/inventory": {
+      "patch": {
+        "tags": ["Products"],
+        "summary": "Update product inventory",
+        "description": "Update available quantity and safety stock for a product (localhost only, JWT required)",
+        "parameters": [
+          {
+            "name": "productCode",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "Product code"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/InventoryUpdate"},
+              "examples": {
+                "restockInventory": {
+                  "summary": "Restock product inventory",
+                  "value": {
+                    "availableQuantity": 100,
+                    "safetyStock": 15
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Inventory updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {"$ref": "#/components/schemas/ApiResponse"},
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "productCode": {"type": "string"},
+                            "previousInventory": {"$ref": "#/components/schemas/Inventory"},
+                            "currentInventory": {"$ref": "#/components/schemas/Inventory"}
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Product not found"
+          }
+        }
+      }
+    },
+    "/api/products/{productCode}/restore": {
+      "post": {
+        "tags": ["Products"],
+        "summary": "Restore deleted product",
+        "description": "Restore a soft-deleted product (localhost only, JWT required)",
+        "parameters": [
+          {
+            "name": "productCode",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "Product code to restore"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Product restored successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {"$ref": "#/components/schemas/ApiResponse"},
+                    {
+                      "properties": {
+                        "data": {"$ref": "#/components/schemas/Product"}
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Deleted product not found"
+          }
+        }
+      }
+    },
+    "/api/categories": {
+      "get": {
+        "tags": ["Categories"],
+        "summary": "List all active categories",
+        "description": "Get all active categories ordered by display order (public access)",
+        "responses": {
+          "200": {
+            "description": "Categories retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {"$ref": "#/components/schemas/ApiResponse"},
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "categories": {
+                              "type": "array",
+                              "items": {"$ref": "#/components/schemas/Category"}
+                            },
+                            "count": {
+                              "type": "integer",
+                              "description": "Total number of categories"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      },
+      "post": {
+        "tags": ["Categories"],
+        "summary": "Create new category",
+        "description": "Create a new product category (admin only, JWT required)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "slug"],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "description": "Category name"
+                  },
+                  "slug": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                    "description": "URL-friendly slug (lowercase, alphanumeric, hyphens)"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Category description"
+                  },
+                  "icon": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "description": "Icon identifier (e.g., 'fa-laptop')"
+                  },
+                  "displayOrder": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "default": 999,
+                    "description": "Display order for sorting"
+                  },
+                  "isActive": {
+                    "type": "integer",
+                    "enum": [0, 1],
+                    "default": 1,
+                    "description": "Whether the category is active (1) or inactive (0)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Category created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {"$ref": "#/components/schemas/ApiResponse"},
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "category": {"$ref": "#/components/schemas/CategoryDetail"}
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data"
+          },
+          "409": {
+            "description": "Category with slug already exists"
+          }
+        }
+      }
+    },
+    "/api/categories/{slug}": {
+      "get": {
+        "tags": ["Categories"],
+        "summary": "Get category by slug",
+        "description": "Get detailed information about a specific category (public access)",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "Category slug"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Category retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {"$ref": "#/components/schemas/ApiResponse"},
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "category": {"$ref": "#/components/schemas/CategoryDetail"}
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Category not found"
+          }
+        },
+        "security": []
+      },
+      "patch": {
+        "tags": ["Categories"],
+        "summary": "Update category",
+        "description": "Update an existing category (admin only, JWT required)",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "Category slug"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "description": "Category name"
+                  },
+                  "slug": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                    "description": "URL-friendly slug"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Category description"
+                  },
+                  "icon": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "description": "Icon identifier"
+                  },
+                  "displayOrder": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Display order"
+                  },
+                  "isActive": {
+                    "type": "integer",
+                    "enum": [0, 1],
+                    "description": "Active status"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Category updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {"$ref": "#/components/schemas/ApiResponse"},
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "category": {"$ref": "#/components/schemas/CategoryDetail"}
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data"
+          },
+          "404": {
+            "description": "Category not found"
+          },
+          "409": {
+            "description": "Category with slug already exists"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Categories"],
+        "summary": "Delete category",
+        "description": "Soft delete a category by setting is_active to 0 (admin only, JWT required)",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "Category slug"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Category deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/ApiResponse"}
+              }
+            }
+          },
+          "404": {
+            "description": "Category not found"
+          }
+        }
+      }
+    },
+    "/api/categories/{slug}/products": {
+      "get": {
+        "tags": ["Categories"],
+        "summary": "Get products by category",
+        "description": "Get all products in a specific category with pagination and price filters (public access)",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "Category slug"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {"type": "integer", "minimum": 1, "default": 1},
+            "description": "Page number"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {"type": "integer", "minimum": 1, "maximum": 100, "default": 20},
+            "description": "Items per page"
+          },
+          {
+            "name": "priceMin",
+            "in": "query",
+            "schema": {"type": "number", "format": "double"},
+            "description": "Minimum price filter"
+          },
+          {
+            "name": "priceMax",
+            "in": "query",
+            "schema": {"type": "number", "format": "double"},
+            "description": "Maximum price filter"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Products retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {"$ref": "#/components/schemas/ApiResponse"},
+                    {
+                      "properties": {
+                        "data": {
+                          "allOf": [
+                            {"$ref": "#/components/schemas/PaginatedResponse"},
+                            {
+                              "properties": {
+                                "items": {
+                                  "type": "array",
+                                  "items": {"$ref": "#/components/schemas/Product"}
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Category not found"
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/categories/{slug}/restore": {
+      "post": {
+        "tags": ["Categories"],
+        "summary": "Restore deleted category",
+        "description": "Restore a soft-deleted category by setting is_active to 1 (admin only, JWT required)",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "Category slug"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Category restored successfully",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/ApiResponse"}
+              }
+            }
+          },
+          "404": {
+            "description": "Category not found"
+          }
+        }
+      }
+    },
+    "/api/shipments": {
+      "get": {
+        "tags": ["Shipments"],
+        "summary": "List shipments",
+        "description": "Get shipments with optional filtering by order ID or customer ID (JWT required - Customer sees only their shipments, Users see all or filtered)",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "query",
+            "schema": {"type": "integer"},
+            "description": "Filter shipments by specific order ID"
+          },
+          {
+            "name": "customerId",
+            "in": "query",
+            "schema": {"type": "integer"},
+            "description": "Filter shipments by specific customer ID (admin only)"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {"type": "string", "enum": ["CREATED", "PICKED_UP", "IN_TRANSIT", "OUT_FOR_DELIVERY", "DELIVERED", "FAILED"]},
+            "description": "Filter by shipment status"
+          },
+          {
+            "name": "carrier",
+            "in": "query",
+            "schema": {"type": "string"},
+            "description": "Filter by shipping carrier"
+          },
+          {
+            "name": "trackingCode",
+            "in": "query",
+            "schema": {"type": "string"},
+            "description": "Search by tracking code"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {"type": "integer", "minimum": 1, "default": 1}
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {"type": "integer", "minimum": 1, "maximum": 100, "default": 50}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Shipments retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {"$ref": "#/components/schemas/ApiResponse"},
+                    {
+                      "properties": {
+                        "data": {
+                          "allOf": [
+                            {"$ref": "#/components/schemas/PaginatedResponse"},
+                            {
+                              "properties": {
+                                "items": {
+                                  "type": "array",
+                                  "items": {"$ref": "#/components/schemas/Shipment"}
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/shipments/webhook": {
+      "post": {
+        "tags": ["Shipments"],
+        "summary": "Shipment status webhook",
+        "description": "Handle shipment status updates from shipping providers (public endpoint, no authentication required)",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "trackingCode": {
+                    "type": "string",
+                    "description": "Carrier tracking code"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": ["IN_TRANSIT", "OUT_FOR_DELIVERY", "DELIVERED", "FAILED"],
+                    "description": "Updated shipment status (only these statuses can be sent from external providers)"
+                  },
+                  "timestamp": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Status update timestamp"
+                  },
+                  "location": {
+                    "type": "string",
+                    "description": "Current location or delivery address"
+                  },
+                  "estimatedDelivery": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Updated estimated delivery time"
+                  },
+                  "carrier": {
+                    "type": "string",
+                    "description": "Shipping carrier name"
+                  },
+                  "deliveryConfirmation": {
+                    "type": "object",
+                    "description": "Delivery confirmation details (for DELIVERED status)",
+                    "properties": {
+                      "recipientName": {"type": "string"},
+                      "signatureRequired": {"type": "boolean"},
+                      "deliveredAt": {"type": "string", "format": "date-time"}
+                    }
+                  }
+                },
+                "required": ["trackingCode", "status", "timestamp"]
+              },
+              "examples": {
+                "inTransit": {
+                  "summary": "Package in transit update",
+                  "value": {
+                    "trackingCode": "1Z999AA1234567890",
+                    "status": "IN_TRANSIT",
+                    "timestamp": "2024-01-15T14:30:00Z",
+                    "location": "Milano Distribution Center",
+                    "estimatedDelivery": "2024-01-16T18:00:00Z",
+                    "carrier": "UPS"
+                  }
+                },
+                "delivered": {
+                  "summary": "Package delivered notification",
+                  "value": {
+                    "trackingCode": "1Z999AA1234567890",
+                    "status": "DELIVERED",
+                    "timestamp": "2024-01-16T16:45:00Z",
+                    "location": "Via Roma 123, Milano",
+                    "carrier": "UPS",
+                    "deliveryConfirmation": {
+                      "recipientName": "Mario Rossi",
+                      "signatureRequired": false,
+                      "deliveredAt": "2024-01-16T16:45:00Z"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Webhook processed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {"$ref": "#/components/schemas/ApiResponse"},
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "processed": {"type": "boolean", "example": true},
+                            "orderId": {"type": "integer", "description": "Associated order ID"},
+                            "previousStatus": {"type": "string"},
+                            "newStatus": {"type": "string"},
+                            "notificationSent": {"type": "boolean", "description": "Whether WebSocket notification was sent"}
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid webhook payload or tracking code not found"
+          }
+        }
+      }
+    },
+    "/api/wishlist": {
+      "get": {
+        "tags": ["Wishlist"],
+        "summary": "Get customer wishlist",
+        "description": "Get all products in the customer's wishlist with product details (Customer JWT required)",
+        "responses": {
+          "200": {
+            "description": "Wishlist retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {"$ref": "#/components/schemas/ApiResponse"},
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "wishlist": {
+                              "type": "array",
+                              "items": {"$ref": "#/components/schemas/WishlistItem"}
+                            },
+                            "count": {
+                              "type": "integer",
+                              "description": "Total number of items in wishlist"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Customer authentication required"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Wishlist"],
+        "summary": "Add product to wishlist",
+        "description": "Add a product to the customer's wishlist (Customer JWT required)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["productCode"],
+                "properties": {
+                  "productCode": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "description": "Product code to add"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Product added to wishlist successfully",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/ApiResponse"}
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid product code or product not available"
+          },
+          "401": {
+            "description": "Customer authentication required"
+          },
+          "404": {
+            "description": "Product not found"
+          },
+          "409": {
+            "description": "Product already in wishlist"
+          }
+        }
+      }
+    },
+    "/api/wishlist/{productCode}": {
+      "delete": {
+        "tags": ["Wishlist"],
+        "summary": "Remove product from wishlist",
+        "description": "Remove a product from the customer's wishlist (Customer JWT required)",
+        "parameters": [
+          {
+            "name": "productCode",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "Product code to remove"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Product removed from wishlist successfully",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/ApiResponse"}
+              }
+            }
+          },
+          "401": {
+            "description": "Customer authentication required"
+          },
+          "404": {
+            "description": "Product not found in wishlist"
+          }
+        }
+      }
+    },
+    "/api/notifications": {
+      "get": {
+        "tags": ["Notifications"],
+        "summary": "Get customer notifications",
+        "description": "Get notifications for authenticated customer with optional filters and pagination (Customer JWT required)",
+        "parameters": [
+          {
+            "name": "isRead",
+            "in": "query",
+            "schema": {"type": "boolean"},
+            "description": "Filter by read status"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {"type": "integer", "default": 20},
+            "description": "Number of notifications per page"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {"type": "integer", "default": 1},
+            "description": "Page number"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notifications retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {"$ref": "#/components/schemas/ApiResponse"},
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "notifications": {
+                              "type": "array",
+                              "items": {"$ref": "#/components/schemas/Notification"}
+                            },
+                            "total": {
+                              "type": "integer",
+                              "description": "Total number of notifications"
+                            },
+                            "page": {
+                              "type": "integer",
+                              "description": "Current page number"
+                            },
+                            "totalPages": {
+                              "type": "integer",
+                              "description": "Total number of pages"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Customer authentication required"
+          }
+        }
+      }
+    },
+    "/api/notifications/unread-count": {
+      "get": {
+        "tags": ["Notifications"],
+        "summary": "Get unread notification count",
+        "description": "Get count of unread notifications for authenticated customer (Customer JWT required)",
+        "responses": {
+          "200": {
+            "description": "Unread count retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {"$ref": "#/components/schemas/ApiResponse"},
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "count": {
+                              "type": "integer",
+                              "description": "Number of unread notifications"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Customer authentication required"
+          }
+        }
+      }
+    },
+    "/api/notifications/mark-all-read": {
+      "patch": {
+        "tags": ["Notifications"],
+        "summary": "Mark all notifications as read",
+        "description": "Mark all notifications as read for authenticated customer (Customer JWT required)",
+        "responses": {
+          "200": {
+            "description": "All notifications marked as read successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {"$ref": "#/components/schemas/ApiResponse"},
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "count": {
+                              "type": "integer",
+                              "description": "Number of notifications marked as read"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Customer authentication required"
+          }
+        }
+      }
+    },
+    "/api/notifications/{id}/read": {
+      "patch": {
+        "tags": ["Notifications"],
+        "summary": "Mark notification as read",
+        "description": "Mark a specific notification as read (Customer JWT required)",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "Notification ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notification marked as read successfully",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/ApiResponse"}
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid notification ID"
+          },
+          "401": {
+            "description": "Customer authentication required"
+          },
+          "403": {
+            "description": "Unauthorized to mark this notification"
+          },
+          "404": {
+            "description": "Notification not found"
+          }
+        }
+      }
+    },
+    "/api/notifications/broadcast": {
+      "post": {
+        "tags": ["Admin"],
+        "summary": "Send broadcast notification",
+        "description": "Send a notification to all active customers (Admin only, localhost only)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": ["order", "offer", "advertising", "promo_personalized"],
+                    "description": "Notification type"
+                  },
+                  "title": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "description": "Notification title"
+                  },
+                  "message": {
+                    "type": "string",
+                    "maxLength": 1000,
+                    "description": "Notification message"
+                  },
+                  "icon": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "description": "Icon name or URL (optional)"
+                  },
+                  "link": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "description": "Link URL (optional)"
+                  },
+                  "priority": {
+                    "type": "string",
+                    "enum": ["low", "normal", "high", "urgent"],
+                    "description": "Notification priority (optional, default: normal)"
+                  }
+                },
+                "required": ["type", "title", "message"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Broadcast notification sent successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {"$ref": "#/components/schemas/ApiResponse"},
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "count": {
+                              "type": "integer",
+                              "description": "Number of customers notified"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body (missing required fields)"
+          },
+          "401": {
+            "description": "Admin authentication required"
+          },
+          "403": {
+            "description": "Access denied - localhost only"
+          }
+        }
+      }
+    },
+    "/api/notifications/wishlist/{productCode}": {
+      "post": {
+        "tags": ["Admin"],
+        "summary": "Send wishlist notification",
+        "description": "Send a notification to customers with specific product in wishlist (Admin only, localhost only)",
+        "parameters": [
+          {
+            "name": "productCode",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "Product code"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": ["order", "offer", "advertising", "promo_personalized"],
+                    "description": "Notification type"
+                  },
+                  "title": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "description": "Notification title"
+                  },
+                  "message": {
+                    "type": "string",
+                    "maxLength": 1000,
+                    "description": "Notification message"
+                  },
+                  "icon": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "description": "Icon name or URL (optional)"
+                  },
+                  "link": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "description": "Link URL (optional)"
+                  },
+                  "priority": {
+                    "type": "string",
+                    "enum": ["low", "normal", "high", "urgent"],
+                    "description": "Notification priority (optional, default: normal)"
+                  }
+                },
+                "required": ["type", "title", "message"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Wishlist notification sent successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {"$ref": "#/components/schemas/ApiResponse"},
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "count": {
+                              "type": "integer",
+                              "description": "Number of customers notified"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body or product code"
+          },
+          "401": {
+            "description": "Admin authentication required"
+          },
+          "403": {
+            "description": "Access denied - localhost only"
+          }
+        }
+      }
+    },
+    "/api/products/{productCode}/reviews": {
+      "post": {
+        "tags": ["Reviews"],
+        "summary": "Create product review",
+        "description": "Create a new review for a purchased product. Customer must have ordered the product. Only one review per product per order allowed. (Customer JWT required)",
+        "parameters": [
+          {
+            "name": "productCode",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "Product code to review"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "orderId": {"type": "integer", "description": "Order ID where product was purchased (required)"},
+                  "rating": {"type": "integer", "minimum": 1, "maximum": 5, "description": "Rating from 1 to 5 stars"},
+                  "title": {"type": "string", "maxLength": 100, "description": "Review title"},
+                  "comment": {"type": "string", "maxLength": 2000, "description": "Review text"}
+                },
+                "required": ["orderId", "rating"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {"description": "Review created successfully, pending moderation"},
+          "400": {"description": "Invalid rating or missing orderId"},
+          "403": {"description": "Product not purchased or already reviewed"},
+          "404": {"description": "Order not found"}
+        }
+      },
+      "get": {
+        "tags": ["Reviews"],
+        "summary": "Get product reviews",
+        "description": "Get all approved reviews for a product (public endpoint)",
+        "security": [],
+        "parameters": [
+          {
+            "name": "productCode",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "200": {"description": "Reviews retrieved successfully"}
+        }
+      }
+    },
+    "/api/reviews/{id}/approve": {
+      "patch": {
+        "tags": ["Reviews"],
+        "summary": "Approve review",
+        "description": "Approve a pending review (Admin only, localhost only)",
+        "security": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "Review MongoDB ObjectId"
+          }
+        ],
+        "responses": {
+          "200": {"description": "Review approved"},
+          "404": {"description": "Review not found"}
+        }
+      }
+    },
+    "/api/reviews/{id}/reject": {
+      "patch": {
+        "tags": ["Reviews"],
+        "summary": "Reject review",
+        "description": "Reject a review with reason (Admin only, localhost only)",
+        "security": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {"type": "string", "description": "Rejection reason"}
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {"description": "Review rejected"},
+          "404": {"description": "Review not found"}
+        }
+      }
+    },
+    "/api/reviews/{id}/helpful": {
+      "patch": {
+        "tags": ["Reviews"],
+        "summary": "Mark review as helpful",
+        "description": "Increment helpful counter for a review (public endpoint)",
+        "security": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "200": {"description": "Review marked as helpful"},
+          "404": {"description": "Review not found"}
+        }
+      }
+    },
+    "/api/reviews/{id}": {
+      "delete": {
+        "tags": ["Reviews"],
+        "summary": "Delete review",
+        "description": "Delete a review. Customers can only delete their own reviews, admins can delete any. (JWT required)",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "200": {"description": "Review deleted"},
+          "403": {"description": "Not authorized to delete this review"},
+          "404": {"description": "Review not found"}
+        }
+      }
+    },
+    "/api/reviews/pending": {
+      "get": {
+        "tags": ["Reviews"],
+        "summary": "Get pending reviews",
+        "description": "Get all reviews awaiting moderation (Admin only, localhost only)",
+        "security": [],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {"type": "integer", "default": 50}
+          }
+        ],
+        "responses": {
+          "200": {"description": "Pending reviews retrieved"}
+        }
+      }
+    },
+    "/api/customers/me/reviews": {
+      "get": {
+        "tags": ["Reviews"],
+        "summary": "Get my reviews",
+        "description": "Get all reviews created by authenticated customer (Customer JWT required)",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {"type": "integer", "default": 20}
+          }
+        ],
+        "responses": {
+          "200": {"description": "Customer reviews retrieved"}
+        }
+      }
+    },
+    "/api/products/{productCode}/questions": {
+      "post": {
+        "tags": ["Questions"],
+        "summary": "Create product question",
+        "description": "Ask a question about a product (Customer JWT required)",
+        "parameters": [
+          {
+            "name": "productCode",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "question": {"type": "string", "maxLength": 500, "description": "Question text"}
+                },
+                "required": ["question"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {"description": "Question created successfully"},
+          "400": {"description": "Invalid question text or length"}
+        }
+      },
+      "get": {
+        "tags": ["Questions"],
+        "summary": "Get product questions",
+        "description": "Get all non-hidden questions for a product (public endpoint)",
+        "security": [],
+        "parameters": [
+          {
+            "name": "productCode",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          },
+          {
+            "name": "includeHidden",
+            "in": "query",
+            "schema": {"type": "boolean", "default": false},
+            "description": "Include hidden questions (admin only)"
+          }
+        ],
+        "responses": {
+          "200": {"description": "Questions retrieved successfully"}
+        }
+      }
+    },
+    "/api/questions/{id}/answer": {
+      "patch": {
+        "tags": ["Questions"],
+        "summary": "Answer question",
+        "description": "Add staff answer to a customer question (Admin only, localhost only)",
+        "security": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "answer": {"type": "string", "maxLength": 1000, "description": "Answer text"}
+                },
+                "required": ["answer"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {"description": "Answer added successfully"},
+          "400": {"description": "Invalid answer text or length"},
+          "404": {"description": "Question not found"}
+        }
+      }
+    },
+    "/api/questions/{id}/hide": {
+      "patch": {
+        "tags": ["Questions"],
+        "summary": "Hide question",
+        "description": "Hide a question from public view (Admin only, localhost only)",
+        "security": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "200": {"description": "Question hidden"},
+          "404": {"description": "Question not found"}
+        }
+      }
+    },
+    "/api/questions/{id}/helpful": {
+      "patch": {
+        "tags": ["Questions"],
+        "summary": "Mark question as helpful",
+        "description": "Increment helpful counter for a question (public endpoint)",
+        "security": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "200": {"description": "Question marked as helpful"},
+          "404": {"description": "Question not found"}
+        }
+      }
+    },
+    "/api/questions/{id}": {
+      "delete": {
+        "tags": ["Questions"],
+        "summary": "Delete question",
+        "description": "Delete a question. Customers can only delete their own questions, admins can delete any. (JWT required)",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "200": {"description": "Question deleted"},
+          "403": {"description": "Not authorized to delete this question"},
+          "404": {"description": "Question not found"}
+        }
+      }
+    },
+    "/api/questions/pending": {
+      "get": {
+        "tags": ["Questions"],
+        "summary": "Get pending questions",
+        "description": "Get all unanswered questions (Admin only, localhost only)",
+        "security": [],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {"type": "integer", "default": 50}
+          }
+        ],
+        "responses": {
+          "200": {"description": "Pending questions retrieved"}
+        }
+      }
+    },
+    "/api/customers/me/questions": {
+      "get": {
+        "tags": ["Questions"],
+        "summary": "Get my questions",
+        "description": "Get all questions created by authenticated customer (Customer JWT required)",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {"type": "integer", "default": 20}
+          }
+        ],
+        "responses": {
+          "200": {"description": "Customer questions retrieved"}
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "System",
+      "description": "System health, documentation and utility endpoints"
+    },
+    {
+      "name": "Users",
+      "description": "Technical user management and authentication (admin functions, localhost only)"
+    },
+    {
+      "name": "Customers", 
+      "description": "Customer registration, authentication and profile management"
+    },
+    {
+      "name": "Products",
+      "description": "Product catalog management with inventory tracking and search capabilities"
+    },
+    {
+      "name": "Categories",
+      "description": "Product category management with public listing and admin CRUD operations"
+    },
+    {
+      "name": "Orders",
+      "description": "Complete order lifecycle management from cart creation to delivery with real-time status updates"
+    },
+    {
+      "name": "Payments",
+      "description": "Payment processing integration with external providers and webhook handling"
+    },
+    {
+      "name": "Shipments",
+      "description": "Shipping management, carrier integration and delivery tracking with webhook updates"
+    },
+    {
+      "name": "Wishlist",
+      "description": "Customer wishlist management for saving favorite products"
+    },
+    {
+      "name": "Notifications",
+      "description": "Customer notification system with WebSocket real-time delivery and MongoDB storage"
+    },
+    {
+      "name": "Reviews",
+      "description": "Product review system with moderation workflow, customer ratings and helpful voting (MongoDB)"
+    },
+    {
+      "name": "Questions",
+      "description": "Product Q&A system with staff answers, moderation and helpful voting (MongoDB)"
+    },
+    {
+      "name": "Admin",
+      "description": "Administrative functions for broadcast notifications and system management (localhost only)"
+    }
+  ],
+  "externalDocs": {
+    "description": "WebSocket Events Documentation",
+    "url": "/websocket-events"
+  },
+  "x-features": {
+    "authentication": "JWT-based authentication with role-based access control",
+    "realtime": "WebSocket notifications for order status updates",
+    "inventory": "Real-time inventory tracking with reservation system",
+    "workflow": "Complete order workflow from cart to delivery",
+    "security": "CORS, Helmet, rate limiting, domain restrictions",
+    "mongodb": "Hybrid database architecture with MongoDB for reviews, questions and activity logs",
+    "moderation": "Review and question moderation system with approval workflow"
+  },
+  "x-websocket-events": {
+    "order.paid": {
+      "description": "Emitted to all technical users when an order payment is completed",
+      "payload": {
+        "orderId": "integer",
+        "customerId": "integer", 
+        "customerName": "string",
+        "totalAmount": "number",
+        "paymentDate": "datetime",
+        "paymentProvider": "string",
+        "transactionId": "string"
+      }
+    },
+    "order.processing": {
+      "description": "Emitted to the specific technical user who took charge of an order",
+      "payload": {
+        "orderId": "integer",
+        "customerId": "integer",
+        "customerName": "string", 
+        "totalAmount": "number",
+        "managedBy": "string",
+        "statusChangedAt": "datetime"
+      }
+    },
+    "order.sent": {
+      "description": "Emitted to the technical user when order is handed to shipping carrier",
+      "payload": {
+        "orderId": "integer",
+        "customerId": "integer",
+        "customerName": "string",
+        "totalAmount": "number",
+        "trackingCode": "string",
+        "carrier": "string",
+        "shipmentDate": "datetime"
+      }
+    },
+    "order.shipping": {
+      "description": "Emitted to technical user when shipment status is updated by carrier",
+      "payload": {
+        "orderId": "integer",
+        "trackingCode": "string",
+        "carrier": "string",
+        "status": "string",
+        "estimatedDelivery": "datetime",
+        "location": "string"
+      }
+    },
+    "order.delivered": {
+      "description": "Emitted to technical user when order is successfully delivered",
+      "payload": {
+        "orderId": "integer",
+        "customerId": "integer",
+        "customerName": "string",
+        "trackingCode": "string",
+        "deliveryDate": "datetime"
+      }
+    }
+  }
+}
